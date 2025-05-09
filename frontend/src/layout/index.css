@@ -1,0 +1,53 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 60px;
+  background-color: #f1f1f1;
+  z-index: 1000;
+}
+
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  margin-top: 60px;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+  margin-left: 250px; /* Changed from 60px to 250px for default open */
+}
+
+/* Updated this selector to handle both cases */
+.sidebar:not(.open) ~ .main-content {
+  margin-left: 60px;
+}
+
+@media (max-width: 768px) {
+  /* Start closed on mobile by default */
+  .sidebar {
+    width: 0;
+    transform: translateX(-100%);
+  }
+   
+  .sidebar.open {
+    width: 250px;
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .sidebar-open .main-content {
+    transform: translateX(250px);
+  }
+}
