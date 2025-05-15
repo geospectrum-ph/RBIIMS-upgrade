@@ -1,11 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import "./index.css";
+import axios from "axios";
 
 function Main() {
+  // test
+  const [data, setData] = useState(null);
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`http://localhost:4000/test/getTest`);
+        setData(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []); // Empty dependency
+
   return (
     <main className="main-content">
       <h1>RBIIMS</h1>
-      <p>main content area.</p>
+      <p>Test: Retrieved from the database </p>
+      {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
     </main>
   );
 }
