@@ -1,0 +1,129 @@
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  height: calc(100vh - 60px);
+  width: 250px;
+  background-color: #e6e6e6;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  z-index: 900;
+}
+
+/* Closed state */
+.sidebar:not(.open) {
+  width: 60px;
+}
+
+/* Toggle button styles */
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: rgb(0, 0, 0);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 15px;
+  width: 100%;
+  position: relative;
+  border-bottom: 1px solid #9b9b9b;
+}
+
+.sidebar-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-left: 10px;
+  transition: all 0.3s ease;
+  opacity: 1;
+  white-space: nowrap;
+}
+
+.toggle-icon {
+  font-size: 20px;
+  transition: all 0.3s ease;
+padding-left: 100px;
+}
+
+/* When sidebar is closed */
+.sidebar:not(.open) .sidebar-title {
+  opacity: 0;
+  width: 0;
+  margin-left: 0;
+}
+
+.sidebar:not(.open) .toggle-icon {
+  position: absolute;
+  left: -30%;
+  transform: translateX(-50%);
+}
+
+/* Sidebar content */
+.sidebar-content {
+  padding: 10px;
+}
+
+.sub-category {
+  color: #95a5a6;
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0px 0 10px 0;
+  padding-left: 10px;
+  padding-top: 10px;
+  transition: all 0.3s ease;
+}
+
+.sidebar:not(.open) .sub-category {
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Navigation styles */
+.sidebar-nav {
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav li {
+  margin-bottom: 8px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-nav input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+.sidebar-nav label {
+  color: rgb(58, 58, 58);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sidebar-nav label:hover {
+  color: #3498db;
+}
+
+/* Hide nav items when closed */
+.sidebar:not(.open) .sidebar-nav {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.open .sidebar-nav {
+  opacity: 1;
+  height: auto;
+  transition: opacity 0.3s ease 0.2s;
+}
