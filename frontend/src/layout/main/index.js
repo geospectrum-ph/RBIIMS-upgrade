@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./index.css";
 import axios from "axios";
+import Map from "../../components/map";
 
 function Main() {
   // test
@@ -20,9 +21,10 @@ function Main() {
 
   return (
     <main className="main-content">
-      <h1>RBIIMS</h1>
+      {/* <h1>RBIIMS</h1>
       <p>Test: Retrieved from the database </p>
-      {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+      {data && <pre>{JSON.stringify(data, null, 2)}</pre>} */}
+      <Map/>
     </main>
   );
 }
