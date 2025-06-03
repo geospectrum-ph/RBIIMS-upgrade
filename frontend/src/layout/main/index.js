@@ -9,7 +9,9 @@ function Main() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/test/getTest`);
+      const response = await axios.get('http://localhost:4000/test/getTest', {
+          withCredentials: true // Crucial for sending cookies (add this to every request or create a global axios)
+        });
         setData(response.data);
       } catch (error) {
         console.error("Error fetching data:", error);

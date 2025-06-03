@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const sql = require("mssql");
-
 const app = express();
 app.use(
   cors({
@@ -10,8 +9,9 @@ app.use(
     credentials: true,
   })
 );
+const { verifyAspnetAuth } = require('./middleware/auth'); // middleware for protected api endpoints
 
-const port = process.env.PORT || 4000;
+const port = 4000;
 
 // MSSQL connection config
 const dbConfig = {
@@ -35,7 +35,7 @@ sql
 
       try {
         const testRoutes = require("./routes/test")(pool);
-        app.use("/test", testRoutes);
+        app.use("/test", verifyAspnetAuth, testRoutes);
       } catch (err) {
         console.error("Error setting up routes:", err);
       }

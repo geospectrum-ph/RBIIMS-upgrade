@@ -6,7 +6,7 @@ function Header() {
   return (
     <>
       <div className="header">
-        <a href="#" className="logo">
+        <a href="http://localhost:49928/" className="logo">
           <img src={Logo} alt="Company Logo" width="220" />
         </a>
         <div className="header-right">
