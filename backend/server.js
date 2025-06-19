@@ -40,6 +40,13 @@ sql
         console.error("Error setting up routes:", err);
       }
 
+      try {
+        const layerRoutes = require("./routes/getLayers")(pool);
+        app.use("/layer", layerRoutes);
+      } catch (err) {
+        console.error("Error setting up routes:", err);
+      }
+
       app.listen(port, () => {
         console.log(`The server is running on port: ${port}.`);
       });

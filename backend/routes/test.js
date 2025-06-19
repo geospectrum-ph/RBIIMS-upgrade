@@ -3,7 +3,7 @@ const router = express.Router();
 
 module.exports = (db) => {
   router.get("/getTest", (req, res) => {
-    const sql = `SELECT * FROM users`;
+    const sql = `SELECT * FROM majorriverbasin_gj`;
     db.query(sql, (err, result) => {
       if (err) {
         console.error(err);
