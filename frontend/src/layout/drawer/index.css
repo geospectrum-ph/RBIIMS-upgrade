@@ -127,3 +127,7 @@ padding-left: 100px;
   height: auto;
   transition: opacity 0.3s ease 0.2s;
 }
+
+.dropdown:hover{
+  cursor: pointer;
+}

@@ -4,17 +4,20 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MaplibreLegendControl } from "@watergis/maplibre-gl-legend";
 import '@watergis/maplibre-gl-legend/dist/maplibre-gl-legend.css';
 import './index.css';
+import { MapContext } from '../../context/MapContext';
 
 // import DEMLayer from '../../assets/SRTM_30meters_DEM_Philippines_clipped.tif'
 
 // import regions from '../../assets/regions.json'
 
 
-export default function Map() {
+export default function Map({visibleLayers}) {
   const [riverBasin, setRiverBasin] = React.useState([]);
   const [barangays, setBarangays] = React.useState([]);
   const [roadNetworks, setRoadNetworks] = React.useState([]);
   const [forestCover, setForestCover] = React.useState([])
+
+  const {VECTOR_LAYERS, MAP_STYLE} = React.useContext(MapContext)
 
 
   const mapContainer = useRef(null);
@@ -86,107 +89,64 @@ export default function Map() {
     }
   }
 
-  async function getRoadNetworksData() {
-    const url = "http://localhost:4000/layer/getRoadNetworks";
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
-      }
+  function formatProperties(props) {
+  if (!props) return "No properties";
 
-      await response.json().then((res) => {
-        if (res.length > 0 ) {
-        // console.log(res);
-        setRoadNetworks(res)
-      }
-      });
-      
-      
-    } catch (error) {
-      console.error(error.message);
-    }
-  }
+  return Object.entries(props)
+    .map(([key, value]) => `<strong>${key}</strong>: ${value}`)
+    .join("<br/>");
+}
 
-  async function getBarangayData() {
-    const url = "http://localhost:4000/layer/getBarangays";
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
-      }
 
-      const json = await response.json();
-      
-      if (json.length > 0 ) {
-        console.log(json);
-        setBarangays(json)
-      }
-    } catch (error) {
-      console.error(error.message);
-    }
-  }
 
-  useEffect(() => {
-    if (map.current) return; // stops map from intializing more than once
+
+  // useEffect(() => {
+  //   if (map.current) return; // stops map from intializing more than once
   
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: style,
-      center: [lng, lat],
-      zoom: zoom
-    });
+  //   map.current = new maplibregl.Map({
+  //     container: mapContainer.current,
+  //     style: style,
+  //     center: [lng, lat],
+  //     zoom: zoom
+  //   });
 
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+  //   map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
     
-    getRiverBasinData();
-    getForestCoverLossData()
-    // getRoadNetworksData();
-    // getBarangayData()
+  //   getRiverBasinData();
+  //   getForestCoverLossData()
+  //   // getRoadNetworksData();
+  //   // getBarangayData()
   
 
   
-  }, [lng, lat, zoom]);
+  // }, [lng, lat, zoom]);
+
+
 
   useEffect(() => {
     if(riverBasin.length > 0 && forestCover.length > 0) {
       // map.current.on('load', () => { 
 
-      map.current.addSource('raster-dem', {
-        'type': "raster",
-        'tiles': [
-          'http://192.168.68.144:8080/geoserver/GMS/wms?service=WMS&version=1.1.1&request=GetMap&layers=GMS:SRTM_30meters_DEM_Philippines_clipped&styles=&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857&format=image/png'
-        ],
-        // 'tileSize': 256
-      })
+      // map.current.addSource('river-basin', {
+      //   'type': 'geojson',
+      //   'data': {
+      //     'type': 'FeatureCollection',
+      //     'features': riverBasin
+      //   }
+      // });
 
-      map.current.addLayer({
-        'id': 'raster-wms-dem',
-        'type': 'raster',
-        'source': 'raster-dem',
-        'paint': {}
-      })
+      // map.current.addLayer({
+      //   'id': 'riverbasin',
+      //   'type': 'fill',
+      //   'source': 'river-basin',
+      //   'layout': {},
+      //   'paint': {
+      //     'fill-color': '#088',
+      //     'fill-opacity': 0.8,
+      //   }
+      // });
 
-
-      map.current.addSource('river-basin', {
-        'type': 'geojson',
-        'data': {
-          'type': 'FeatureCollection',
-          'features': riverBasin
-        }
-      });
-
-      map.current.addLayer({
-        'id': 'riverbasin',
-        'type': 'line',
-        'source': 'river-basin',
-        'layout': {},
-        'paint': {
-          // 'fill-color': '#088',
-          // 'fill-opacity': 0.8,
-          'line-width': 2,
-          'line-color': '#000'
-        }
-      });
+      // console.log(riverBasin)
 
       map.current.addSource('forestcoverloss', {
         'type': 'geojson',
@@ -321,80 +281,87 @@ export default function Map() {
       
 
 
-      const targets = {
-        'riverbasin': 'River Basins',
-        'forestcover': 'Forest Cover Loss Heat Map (2022)',
-        'forestcover-points': 'Forest Cover Loss (2022)',
-        'raster-wms-dem': "SRTM DEM"
-        // 'regions': 'Regions'
-        // 'road-networks': 'Road Networks'
-      }
-      map.current.addControl(new MaplibreLegendControl(targets, {showDefault: false}), 'bottom-right');
-
-    //   map.current.on('click', 'riverbasin', (e) => {
-    //     const coordinates = e.features[0].geometry.coordinates;
-    //     const name = e.features[0].properties.name;
-
-    //     // Ensure that if the map is zoomed out such that multiple
-    //     // copies of the feature are visible, the popup appears
-    //     // over the copy being pointed to.
-    //     // while (Math.abs(e.lngLat.lng - coordinates[0][0]) > 180) {
-    //     //   coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-    //     // }
-
-    //     new maplibregl.Popup()
-    //       .setLngLat(coordinates[0][0])
-    //       .setHTML(name)
-    //       .addTo(map);
-    //     });
-
-    //     // Change the cursor to a pointer when the mouse is over the places layer.
-    //     map.current.on('mouseenter', 'places', () => {
-    //       map.getCanvas().style.cursor = 'pointer';
-    //     });
-
-    //     // Change it back to a pointer when it leaves.
-    //     map.current.on('mouseleave', 'places', () => {
-    //       map.getCanvas().style.cursor = '';
-    //     });
+      // const targets = {
+      //   'riverbasin': 'River Basins',
+      //   'forestcover': 'Forest Cover Loss Heat Map (2022)',
+      //   'forestcover-points': 'Forest Cover Loss (2022)',
+      //   'raster-wms-dem': "SRTM DEM"
+      //   // 'regions': 'Regions'
+      //   // 'road-networks': 'Road Networks'
+      // }
+      // map.current.addControl(new MaplibreLegendControl(targets, {showDefault: false}), 'bottom-right');
     }
 
-  }, [riverBasin, forestCover])
+  }, [forestCover])
 
   useEffect(() => {
-    if(roadNetworks.length > 0) {
-      // map.current.on('load', () => { 
-      map.current.addSource('road-network', {
-        'type': 'geojson',
-        'data': {
-          'type': 'FeatureCollection',
-          'features': roadNetworks
+    if (map.current) return;
+
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: MAP_STYLE,
+      center: [lng, lat],
+      zoom: zoom,
+    });
+
+    getForestCoverLossData()
+    getRiverBasinData()
+
+    map.current.on("load", () => {
+      VECTOR_LAYERS.forEach((layerConfig) => {
+        if (!layerConfig.existsInStyle && map.current.getSource(layerConfig.source)) {
+          map.current.addLayer({
+            id: layerConfig.mapLayerId,
+            type: layerConfig.type,
+            source: layerConfig.source,
+            layout: {
+              visibility: "none",
+            },
+            paint: layerConfig.paint,
+          });
+        }
+
+        // Add click event to display popup if layer type is fill or line
+        if (layerConfig.type === "fill" || layerConfig.type === "line") {
+          map.current.on("click", layerConfig.mapLayerId, (e) => {
+            const feature = e.features[0];
+            const props = feature?.properties;
+            const coords = e.lngLat;
+
+            new maplibregl.Popup()
+              .setLngLat(coords)
+              .setHTML(`<strong>${layerConfig.id}</strong><br/>${formatProperties(props)}`)
+              .addTo(map.current);
+          });
+
+          map.current.on("mouseenter", layerConfig.mapLayerId, () => {
+            map.current.getCanvas().style.cursor = "pointer";
+          });
+
+          map.current.on("mouseleave", layerConfig.mapLayerId, () => {
+            map.current.getCanvas().style.cursor = "";
+          });
         }
       });
+    });
 
-      map.current.addLayer({
-        'id': 'road-networks',
-        'type': 'line',
-        'source': 'road-network',
-        'layout': {},
-        'paint': {
-          'fill-color': '#00f8',
-          'fill-opacity': 0.6,
-          'line-width': 2,
-          'line-color': '#000'
-        }
-      });
-
-      const targets = {
-        'riverbasin': 'River Basins',
-        'regions': 'Regions',
-        'road-networks': 'Road Networks'
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
       }
-      map.current.addControl(new MaplibreLegendControl(targets, {showDefault: true}), 'bottom-right');
-    }
+    };
+  }, [lng, lat, zoom]);
 
-    
-  }, [roadNetworks])
+  useEffect(() => {
+    if (!map.current) return;
+
+    VECTOR_LAYERS.forEach(({ id, mapLayerId }) => {
+      if (map.current.getLayer(mapLayerId)) {
+        map.current.setLayoutProperty(mapLayerId, "visibility", visibleLayers[id] ? "visible" : "none");
+      }
+    });
+  }, [visibleLayers]);
   
 
   return (

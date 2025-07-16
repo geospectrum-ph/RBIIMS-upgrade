@@ -4,11 +4,14 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 import Map from './components/map';
 import App from './layout/index'
+import MapContextProvider from './context/MapContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <MapContextProvider>
+      <App />
+    </MapContextProvider>
   </React.StrictMode>
 );
 

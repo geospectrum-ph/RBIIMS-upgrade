@@ -3,7 +3,7 @@ const router = express.Router();
 
 module.exports = (db) => {
   router.get("/getRiverBasin", (req, res) => {
-    const sql = `SELECT * FROM majorriverbasin_gj`;
+    const sql = `SELECT * FROM major_river_basins`;
 
     let formattedresult = []
     db.query(sql, (err, result) => {
@@ -18,7 +18,6 @@ module.exports = (db) => {
             properties: {
               objectID: i + 1,
               name: result.recordset[i].name,
-              area_km: result.recordset[i].area__km,
             },
             geometry: {
               type: "Polygon",

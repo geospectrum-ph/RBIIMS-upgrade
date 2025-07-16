@@ -1,12 +1,32 @@
 import React, { useState } from "react";
 import "./index.css";
+import { MapContext } from "../../context/MapContext";
 
 function Drawer() {
   const [isOpen, setIsOpen] = useState(true);
+  const {visibleLayers, setVisibleLayers, LAYER_GROUPS} = React.useContext(MapContext)
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
     document.body.classList.toggle("sidebar-open", !isOpen);
+  };
+
+  const handleLayerToggle = (layerId, isChecked) => {
+    setVisibleLayers((prev) => ({
+      ...prev,
+      [layerId]: isChecked,
+    }));
+  };
+
+  const renderLayerItem = (layer) => {
+    const layerObj = typeof layer === "string" ? { id: layer, label: layer } : layer;
+
+    return (
+      <li key={layerObj.id}>
+        <input type="checkbox" id={layerObj.id} checked={visibleLayers[layerObj.id]} onChange={(e) => handleLayerToggle(layerObj.id, e.target.checked)} />
+        <label htmlFor={layerObj.id}>{layerObj.label}</label>
+      </li>
+    );
   };
 
   return (
@@ -15,44 +35,33 @@ function Drawer() {
         <span className="sidebar-title">Database</span>
         <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
       </button>
-      
       <div className="sidebar-content">
-        <p className="sub-category">Hydrological Data</p>
-        <nav className="sidebar-nav">
-          <ul>
-            <li>
-              <input type="checkbox" id="watershed-critical" name="watershed" value="critical" />
-              <label htmlFor="watershed-critical">Critical Watershed</label>
-            </li>
-            <li>
-              <input type="checkbox" id="watershed-proclaimed" name="watershed" value="proclaimed" />
-              <label htmlFor="watershed-proclaimed">Proclaimed Watershed</label>
-            </li>
-            <li>
-              <input type="checkbox" id="river-basin" name="watershed" value="river-basin" />
-              <label htmlFor="river-basin">Major River Basin</label>
-            </li>
-          </ul>
-        </nav>
+            {LAYER_GROUPS.map((group, index) => (
+              <React.Fragment key={index}>
+                <p className="sub-category">{group.title}</p>
+                <nav className="sidebar-nav">
+                  <ul>
+                    {group.layers.filter((layer) => !group.subGroups?.some((subGroup) => subGroup.layers.includes(typeof layer === "string" ? layer : layer.id))).map(renderLayerItem)}
 
-        <p className="sub-category">Administrative Boundaries</p>
-        <nav className="sidebar-nav">
-          <ul>
-            <li>
-              <input type="checkbox" id="boundary-national" name="boundary" value="national" />
-              <label htmlFor="boundary-national">National Boundaries</label>
-            </li>
-            <li>
-              <input type="checkbox" id="boundary-regional" name="boundary" value="regional" />
-              <label htmlFor="boundary-regional">Regional Boundaries</label>
-            </li>
-            <li>
-              <input type="checkbox" id="boundary-provincial" name="boundary" value="provincial" />
-              <label htmlFor="boundary-provincial">Provincial Boundaries</label>
-            </li>
-          </ul>
-        </nav>
-      </div>
+                    {group.subGroups?.map((subGroup, subIndex) => (
+                      <li key={`subgroup-${subIndex}`} className="dropdown">
+                        <details>
+                          <summary><b>{subGroup.title}</b></summary>
+                          <ul className="nested-checkboxes">
+                            {subGroup.layers.map((layerId) => {
+                              const layer = group.layers.find((l) => (typeof l === "string" ? l === layerId : l.id === layerId));
+                              return renderLayerItem(layer || layerId);
+                            })}
+                          </ul>
+                        </details>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              </React.Fragment>
+            ))}
+          </div>
+
     </div>
   );
 }

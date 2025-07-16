@@ -2,29 +2,16 @@ import React, { useState } from "react";
 import "./index.css";
 import axios from "axios";
 import Map from "../../components/map";
+import { MapContext } from "../../context/MapContext";
 
 function Main() {
-  // test
-  const [data, setData] = useState(null);
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`http://localhost:4000/test/getTest`);
-        setData(response.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, []); // Empty dependency
-
-  return (
+  const {visibleLayers} = React.useContext(MapContext)
+   return (
     <main className="main-content">
       {/* <h1>RBIIMS</h1>
       <p>Test: Retrieved from the database </p>
       {data && <pre>{JSON.stringify(data, null, 2)}</pre>} */}
-      <Map/>
+      <Map visibleLayers={visibleLayers}/>
     </main>
   );
 }
