@@ -5,13 +5,16 @@ import reportWebVitals from './reportWebVitals';
 import Map from './components/map';
 import App from './layout/index'
 import MapContextProvider from './context/MapContext';
+import LayoutContextProvider from './context/LayoutContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <MapContextProvider>
-      <App />
-    </MapContextProvider>
+    <LayoutContextProvider>
+      <MapContextProvider>
+        <App />
+      </MapContextProvider>
+    </LayoutContextProvider>
   </React.StrictMode>
 );
 

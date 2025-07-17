@@ -5,6 +5,7 @@ import { MaplibreLegendControl } from "@watergis/maplibre-gl-legend";
 import '@watergis/maplibre-gl-legend/dist/maplibre-gl-legend.css';
 import './index.css';
 import { MapContext } from '../../context/MapContext';
+import { LayoutContext } from '../../context/LayoutContext';
 
 // import DEMLayer from '../../assets/SRTM_30meters_DEM_Philippines_clipped.tif'
 
@@ -13,11 +14,11 @@ import { MapContext } from '../../context/MapContext';
 
 export default function Map({visibleLayers}) {
   const [riverBasin, setRiverBasin] = React.useState([]);
-  const [barangays, setBarangays] = React.useState([]);
   const [roadNetworks, setRoadNetworks] = React.useState([]);
   const [forestCover, setForestCover] = React.useState([])
 
   const {VECTOR_LAYERS, MAP_STYLE} = React.useContext(MapContext)
+  const {page} = React.useContext(LayoutContext)
 
 
   const mapContainer = useRef(null);
@@ -48,7 +49,7 @@ export default function Map({visibleLayers}) {
   };
 
   async function getRiverBasinData() {
-    const url = "http://localhost:4000/layer/getRiverBasin";
+    const url = "http://localhost:1433/layer/getRiverBasin";
     try {
       const response = await fetch(url);
       if (!response.ok) {
@@ -69,7 +70,7 @@ export default function Map({visibleLayers}) {
   }
 
   async function getForestCoverLossData() {
-    const url = "http://localhost:4000/layer/getPointsHeat";
+    const url = "http://localhost:1433/layer/getPointsHeat";
     try {
       const response = await fetch(url);
       if (!response.ok) {
@@ -100,53 +101,8 @@ export default function Map({visibleLayers}) {
 
 
 
-  // useEffect(() => {
-  //   if (map.current) return; // stops map from intializing more than once
-  
-  //   map.current = new maplibregl.Map({
-  //     container: mapContainer.current,
-  //     style: style,
-  //     center: [lng, lat],
-  //     zoom: zoom
-  //   });
-
-  //   map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-    
-  //   getRiverBasinData();
-  //   getForestCoverLossData()
-  //   // getRoadNetworksData();
-  //   // getBarangayData()
-  
-
-  
-  // }, [lng, lat, zoom]);
-
-
-
   useEffect(() => {
-    if(riverBasin.length > 0 && forestCover.length > 0) {
-      // map.current.on('load', () => { 
-
-      // map.current.addSource('river-basin', {
-      //   'type': 'geojson',
-      //   'data': {
-      //     'type': 'FeatureCollection',
-      //     'features': riverBasin
-      //   }
-      // });
-
-      // map.current.addLayer({
-      //   'id': 'riverbasin',
-      //   'type': 'fill',
-      //   'source': 'river-basin',
-      //   'layout': {},
-      //   'paint': {
-      //     'fill-color': '#088',
-      //     'fill-opacity': 0.8,
-      //   }
-      // });
-
-      // console.log(riverBasin)
+    if(riverBasin.length > 0 && forestCover.length > 0 && page === "analytics") {
 
       map.current.addSource('forestcoverloss', {
         'type': 'geojson',
@@ -292,7 +248,7 @@ export default function Map({visibleLayers}) {
       // map.current.addControl(new MaplibreLegendControl(targets, {showDefault: false}), 'bottom-right');
     }
 
-  }, [forestCover])
+  }, [forestCover, page])
 
   useEffect(() => {
     if (map.current) return;

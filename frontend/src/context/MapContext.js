@@ -8,7 +8,7 @@ function MapContextProvider (props) {
   const [forestCover, setForestCover] = React.useState([])
   
   async function getForestCoverLossData() {
-    const url = "http://localhost:4000/layer/getPointsHeat";
+    const url = "http://localhost:1433/layer/getPointsHeat";
     try {
       const response = await fetch(url);
       if (!response.ok) {
@@ -27,7 +27,26 @@ function MapContextProvider (props) {
       console.error(error.message);
     }
   }
-
+  const ANA_GROUPS = [
+    {
+      title: "Analytics",
+      layers: [
+        // Forest Loss
+        { id: "forest-loss-2001", label: "Forest Loss 2001" },
+        { id: "forest-loss-2007", label: "Forest Loss 2007" },
+        { id: "forest-loss-2010", label: "Forest Loss 2010" },
+        { id: "forest-loss-2015", label: "Forest Loss 2015" },
+        { id: "forest-loss-2018", label: "Forest Loss 2018" },
+        { id: "forest-loss-2022", label: "Forest Loss 2022" },
+      ],
+      subGroups: [
+        {
+        title: "Forest Loss",
+        layers: ["forest-loss-2001", "forest-loss-2007", "forest-loss-2010", "forest-loss-2015", "forest-loss-2018", "forest-loss-2022"],
+      },
+      ]
+    }
+  ]
   const LAYER_GROUPS = [
   {
     title: "Vector Layers",
@@ -64,13 +83,7 @@ function MapContextProvider (props) {
       { id: "national-park", label: "National Park" },
       { id: "protected-seascape", label: "Protected Seascape" },
       { id: "watershed-reserve", label: "Watershed Reserve" },
-      // Forest Loss
-      { id: "forest-loss-2001", label: "Forest Loss 2001" },
-      { id: "forest-loss-2007", label: "Forest Loss 2007" },
-      { id: "forest-loss-2010", label: "Forest Loss 2010" },
-      { id: "forest-loss-2015", label: "Forest Loss 2015" },
-      { id: "forest-loss-2018", label: "Forest Loss 2018" },
-      { id: "forest-loss-2022", label: "Forest Loss 2022" },
+      
     ],
     subGroups: [
       {
@@ -87,10 +100,7 @@ function MapContextProvider (props) {
         title: "Protected Areas",
         layers: ["nipa", "bird-sanctuary", "national-park", "protected-seascape", "watershed-reserve", ],
       },
-      {
-        title: "Forest Loss",
-        layers: ["forest-loss-2001", "forest-loss-2007", "forest-loss-2010", "forest-loss-2015", "forest-loss-2018", "forest-loss-2022"],
-      },
+      
       {
         title: "Biodiversity",
         layers: ["kba"],
@@ -419,7 +429,7 @@ const MAP_STYLE = {
 
   return (
     <MapContext.Provider value={
-      { url_dem, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE,
+      { url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE,
         visibleLayers, setVisibleLayers
       }
     }>

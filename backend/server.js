@@ -11,7 +11,7 @@ app.use(
   })
 );
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 1433;
 
 // MSSQL connection config
 const dbConfig = {
