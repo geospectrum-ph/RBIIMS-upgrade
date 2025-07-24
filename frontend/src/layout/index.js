@@ -8,6 +8,24 @@ import DrawerA from "./drawer-a";
 
 function Layout() {
   const {page} = React.useContext(LayoutContext)
+    const [isLoading, setIsLoading] = React.useState(true);
+
+   React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); 
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+
   return (
     <div className="app-container">
       <Header />

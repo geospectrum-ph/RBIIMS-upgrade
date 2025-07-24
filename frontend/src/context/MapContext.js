@@ -3,7 +3,7 @@ import * as React from "react";
 export const MapContext = React.createContext();
 
 function MapContextProvider (props) {
-  const url_dem = 'http://192.168.68.144:8080/geoserver/GMS/wms?service=WMS&version=1.1.1&request=GetMap&layers=GMS:SRTM_30meters_DEM_Philippines_clipped&styles=&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857&format=image/png&transparent=true&transparent=true'
+  const url_dem = 'http://192.168.1.133:8080/geoserver/GMS/wms?service=WMS&version=1.1.1&request=GetMap&layers=GMS:SRTM_30meters_DEM_Philippines_clipped&styles=&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857&format=image/png&transparent=true&transparent=true'
 
   const [forestCover, setForestCover] = React.useState([])
   
@@ -330,68 +330,68 @@ const MAP_STYLE = {
     },
     nationalRoads: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3Ahotosm_phl_roads_lines_shp&outputFormat=application%2Fjson&maxFeatures=214120",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3Ahotosm_phl_roads_lines_shp&outputFormat=application%2Fjson&maxFeatures=214120",
     },
     soilType: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AdaSoil&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AdaSoil&outputFormat=application%2Fjson",
     },
     GeolPhils: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AGeol_Phils_MGB&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AGeol_Phils_MGB&outputFormat=application%2Fjson",
     },
     Nipas: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ANipas_&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ANipas_&outputFormat=application%2Fjson",
     },
     KBA: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AKBA_&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AKBA_&outputFormat=application%2Fjson",
     },
     abraRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAbra%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAbra%20River%20Basin&outputFormat=application%2Fjson",
     },
     agnoRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAgno%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAgno%20River%20Basin&outputFormat=application%2Fjson",
     },
     agusanRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAgusan%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAgusan%20River%20Basin&outputFormat=application%2Fjson",
     },
     apayaoRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AApayao-Abulug%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AApayao-Abulug%20River%20Basin&outputFormat=application%2Fjson",
     },
     bicolRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ABicol%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ABicol%20River%20Basin&outputFormat=application%2Fjson",
     },
     buayanRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ABuayan-Malungon%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ABuayan-Malungon%20River%20Basin&outputFormat=application%2Fjson",
     },
     cagayanRiver: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ACagayan%20River%20Basin&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ACagayan%20River%20Basin&outputFormat=application%2Fjson",
     },
     // Protected Areas
     BirdSanctuary: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AGame_Refuge_and_Bird_Sanctuary&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AGame_Refuge_and_Bird_Sanctuary&outputFormat=application%2Fjson",
     },
     NationalPark: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ANational_Park&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ANational_Park&outputFormat=application%2Fjson",
     },
     ProtectedSea: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AProtected_Seascape&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AProtected_Seascape&outputFormat=application%2Fjson",
     },
     WatershedReserve: {
       type: "geojson",
-      data: "http://192.168.68.144:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AWatershed_Reservation&outputFormat=application%2Fjson",
+      data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AWatershed_Reservation&outputFormat=application%2Fjson",
     },
     // forest losssources...
     forestcoverlos: {
