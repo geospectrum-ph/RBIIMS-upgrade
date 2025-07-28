@@ -1,0 +1,11 @@
+.nested-checkboxes.level-0 {
+  padding-left: 10px;
+}
+
+.nested-checkboxes.level-1 {
+  padding-left: 20px;
+}
+
+.nested-checkboxes.level-2 {
+  padding-left: 30px;
+}

@@ -7,10 +7,6 @@ import './index.css';
 import { MapContext } from '../../context/MapContext';
 import { LayoutContext } from '../../context/LayoutContext';
 
-// import DEMLayer from '../../assets/SRTM_30meters_DEM_Philippines_clipped.tif'
-
-// import regions from '../../assets/regions.json'
-
 
 export default function Map({visibleLayers}) {
   const [riverBasin, setRiverBasin] = React.useState([]);
@@ -79,7 +75,7 @@ export default function Map({visibleLayers}) {
 
       await response.json().then((res) => {
         if (res.length > 0 ) {
-        // console.log(res);
+        console.log(res);
         setForestCover(res)
       }
       });
@@ -113,9 +109,9 @@ export default function Map({visibleLayers}) {
       });
 
        map.current.addLayer({
-        'id': 'forestcover',
+        'id': 'forestcover', //change
         'type': 'heatmap',
-        'source': 'forestcoverloss',
+        'source': 'forestcoverloss', //change
         'maxzoom': 16,
         'paint': {
             // Increase the heatmap weight based on frequency and property magnitude
@@ -232,20 +228,6 @@ export default function Map({visibleLayers}) {
           ]
         }
       });
-
-
-      
-
-
-      // const targets = {
-      //   'riverbasin': 'River Basins',
-      //   'forestcover': 'Forest Cover Loss Heat Map (2022)',
-      //   'forestcover-points': 'Forest Cover Loss (2022)',
-      //   'raster-wms-dem': "SRTM DEM"
-      //   // 'regions': 'Regions'
-      //   // 'road-networks': 'Road Networks'
-      // }
-      // map.current.addControl(new MaplibreLegendControl(targets, {showDefault: false}), 'bottom-right');
     }
 
   }, [forestCover, page])
