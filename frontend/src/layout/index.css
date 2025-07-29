@@ -23,7 +23,7 @@
   flex: 1;
   padding: 20px;
   transition: margin-left 0.3s ease;
-  margin-left: 250px; /* Changed from 60px to 250px for default open */
+  margin-left: 280px; /* Changed from 60px to 250px for default open */
 }
 
 /* Updated this selector to handle both cases */
@@ -39,7 +39,7 @@
   }
    
   .sidebar.open {
-    width: 250px;
+    width: 270px;
     transform: translateX(0);
   }
   
