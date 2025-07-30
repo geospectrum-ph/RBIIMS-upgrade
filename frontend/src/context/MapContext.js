@@ -3,9 +3,13 @@ import * as React from "react";
 export const MapContext = React.createContext();
 
 function MapContextProvider(props) {
-  const url_dem = "http://192.168.1.133:8080/geoserver/GMS/wms?service=WMS&version=1.1.1&request=GetMap&layers=GMS:SRTM_30meters_DEM_Philippines_clipped&styles=&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857&format=image/png&transparent=true&transparent=true";
+const url_dem = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_30meters_DEM_Philippines_clipped&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
+const url_twi = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_TWI&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
+const url_slope = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_Slope&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
+const url_hillshade = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_HillshadeColor_Philippines_clip&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
 
   const [forestCoverData, setForestCoverData] = React.useState({});
+  const [populationData, setPopulationData] = React.useState({});
 
   const fetchForestData = async (region, year) => {
     try {
@@ -27,6 +31,25 @@ function MapContextProvider(props) {
     }
   };
 
+  const fetchPopulationData = async (dataType, region) => {
+    try {
+      const url = `http://localhost:1433/layer/getPopulationData?type=${dataType}&region=${encodeURIComponent(region)}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      setPopulationData((prev) => ({
+        ...prev,
+        [`${dataType}-${region}`]: data,
+      }));
+    } catch (error) {
+      console.error("Error fetching population data:", error);
+    }
+  };
   const ANA_GROUPS = [
     {
       title: "Analytics",
@@ -131,7 +154,7 @@ function MapContextProvider(props) {
           ],
         },
         {
-          title: "Population",
+          title: "Choropleth Map",
           layers: [],
           subGroups: [
             {
@@ -147,8 +170,8 @@ function MapContextProvider(props) {
           ],
         },
         {
-          title: "Topographic Wetness Index",
-          layers: ["TWI"],
+          title: "Topograhic Derivatives",
+          layers: ["Topograhic Wetness Index", "Slope", "Hillshade"],
         },
       ],
     },
@@ -430,74 +453,86 @@ function MapContextProvider(props) {
       },
       wmsTWISource: {
         type: "raster",
-        tiles: [url_dem],
+        tiles: [url_twi],
         tileSize: 256,
         attribution: "TWI Layer from GeoServer",
       },
-      nationalRoads: {
-        type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3Ahotosm_phl_roads_lines_shp&outputFormat=application%2Fjson&maxFeatures=214120",
+      wmsSlopeSource: {
+        type: "raster",
+        tiles: [url_slope],
+        tileSize: 256,
+        attribution: "Slope Layer from GeoServer",
       },
+      wmsHillshadeSource: {
+        type: "raster",
+        tiles: [url_hillshade],
+        tileSize: 256,
+        attribution: "HillShade Layer from GeoServer",
+      },
+      // nationalRoads: {
+      //   type: "geojson",
+      //   data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3Ahotosm_phl_roads_lines_shp&outputFormat=application%2Fjson&maxFeatures=214120",
+      // },
       soilType: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AdaSoil&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/soilType`,
       },
       GeolPhils: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AGeol_Phils_MGB&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/soilType`,
       },
       Nipas: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ANipas_&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/Nipas`,
       },
       KBA: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AKBA_&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/KBA`,
       },
       abraRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAbra%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/abraRiver`,
       },
       agnoRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAgno%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/agnoRiver`,
       },
       agusanRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AAgusan%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/agusanRiver`,
       },
       apayaoRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AApayao-Abulug%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/apayaoRiver`,
       },
       bicolRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ABicol%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/bicolRiver`,
       },
       buayanRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ABuayan-Malungon%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/buayanRiver`,
       },
       cagayanRiver: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ACagayan%20River%20Basin&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/cagayanRiver`,
       },
       // Protected Areas
       BirdSanctuary: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AGame_Refuge_and_Bird_Sanctuary&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/BirdSanctuary`,
       },
       NationalPark: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3ANational_Park&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/NationalPark`,
       },
       ProtectedSea: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AProtected_Seascape&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/ProtectedSea`,
       },
       WatershedReserve: {
         type: "geojson",
-        data: "http://192.168.1.133:8080/geoserver/GMS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=GMS%3AWatershed_Reservation&outputFormat=application%2Fjson",
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/WatershedReserve`,
       },
       // forest losssources...
       forestcoverlos: {
@@ -527,7 +562,23 @@ function MapContextProvider(props) {
         type: "raster",
         source: "wmsTWISource",
         layout: {
-          visibility: "none", // Initially hidden
+          visibility: "none",
+        },
+      },
+      {
+        id: "slope-layer",
+        type: "raster",
+        source: "wmsSlopeSource",
+        layout: {
+          visibility: "none",
+        },
+      },
+      {
+        id: "hillshade-layer",
+        type: "raster",
+        source: "wmsHillshadeSource",
+        layout: {
+          visibility: "none",
         },
       },
     ],
@@ -542,7 +593,7 @@ function MapContextProvider(props) {
     }, {})
   );
 
-  return <MapContext.Provider value={{ url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData }}>{props.children}</MapContext.Provider>;
+  return <MapContext.Provider value={{ url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData }}>{props.children}</MapContext.Provider>;
 }
 
 export default MapContextProvider;

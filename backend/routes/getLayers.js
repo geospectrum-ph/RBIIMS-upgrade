@@ -113,12 +113,12 @@ module.exports = (db) => {
       R5: "forestcoverloss_r5",
       R6: "forestcoverloss_r6",
       R7: "forestcoverloss_r7",
-      R8: "forestcoverloss_r2",
-      R9: "forestcoverloss_r3",
-      R10: "forestcoverloss_r1",
-      R11: "forestcoverloss_r2",
-      R12: "forestcoverloss_r3",
-      R13: "forestcoverloss_r3",
+      R8: "forestcoverloss_r8",
+      R9: "forestcoverloss_r9",
+      R10: "forestcoverloss_r10",
+      R11: "forestcoverloss_r11",
+      R12: "forestcoverloss_r12",
+      R13: "forestcoverloss_r13",
       // other regions
     };
 
@@ -163,6 +163,90 @@ module.exports = (db) => {
       }));
 
       res.json(formattedResult);
+    });
+  });
+
+  router.get("/getPopulationData", (req, res) => {
+    const { type, region } = req.query;
+
+    const colMap = {
+      POP_MAY202: "POP_MAY202",
+      PopDensity: "PopDensity",
+    };
+
+    const column = colMap[type];
+    const regionMap = {
+      "REGION I (ILOCOS REGION)": "PH010000000",
+      "REGION II (CAGAYAN VALLEY)": "PH020000000",
+      "REGION III (CENTRAL LUZON)": "PH030000000", 
+      "REGION IV-A (CALABARZON)": "PH040000000", 
+      "REGION IV-B (MIMAROPA)": "PH170000000", 
+      "REGION V (BICOL REGION)": "PH050000000", 
+      "REGION VI (WESTERN VISAYAS)": "PH060000000",
+      "REGION VII (CENTRAL VISAYAS)": "PH070000000",
+      "REGION VIII (EASTERN VISAYAS)": "PH080000000",
+      "REGION IX (ZAMBOANGA PENINSULA)": "PH090000000",
+      "REGION X (NORTHERN MINDANAO)": "PH100000000",
+      "REGION XI (DAVAO REGION)": "PH110000000",
+      "REGION XII (SOCCSKSARGEN)": "PH120000000", 
+      "NATIONAL CAPITAL REGION (NCR)": "PH130000000", 
+      "CORDILLERA ADMINISTRATIVE REGION (CAR)": "PH140000000", 
+      "AUTONOMOUS REGION IN MUSLIM MINDANAO (ARMM)": "PH150000000",
+      "REGION XIII (Caraga)": "PH160000000",
+      "Negros Island Region": "PH180000000",
+      // Add more mappings as needed
+    };
+
+    const regionId = regionMap[region];
+    if (!column || !regionId) {
+      return res.status(400).json({ message: "Invalid parameters." });
+    }
+
+    const query = `
+    SELECT Reg_Name, Mun_Name, qgs_fid, Mun_Code, ${column} as value, geom 
+    FROM PSANAMRIA_munibdry_pop2020 
+    WHERE Reg_Code = @regionId
+  `;
+
+    const request = new sql.Request();
+    request.input("regionId", sql.VarChar, regionId);
+
+    request.query(query, (err, result) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ message: "Server error." });
+      }
+
+      const convertToGeoJSONPolygon = (geometry) => {
+        if (!geometry || !geometry.points || geometry.points.length === 0) return null;
+
+        const coordinates = geometry.points.map((pt) => [pt.x, pt.y]);
+
+        // Close ring if necessary
+        if (coordinates.length > 2 && (coordinates[0][0] !== coordinates[coordinates.length - 1][0] || coordinates[0][1] !== coordinates[coordinates.length - 1][1])) {
+          coordinates.push(coordinates[0]);
+        }
+
+        return {
+          type: "Polygon",
+          coordinates: [coordinates],
+        };
+      };
+
+      const features = result.recordset.map((row) => ({
+        type: "Feature",
+        properties: {
+          _uid: row.qgs_fid,
+          region: row.Reg_Name,
+          municipality: row.Mun_Name,
+          municipality_code: row.Mun_Code,
+          population: type === "POP_MAY202" ? Number(row.value) : null,
+          density: type === "PopDensity" ? Number(row.value) : null,
+        },
+        geometry: convertToGeoJSONPolygon(row.geom),
+      }));
+      // console.log(features)
+      res.json(features);
     });
   });
 

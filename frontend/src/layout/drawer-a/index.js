@@ -12,12 +12,14 @@ function DrawerA() {
     document.body.classList.toggle("sidebar-open", !isOpen);
   };
 
-  // Forest cover Loss
-  const handleLayerToggle = (layerId, isChecked, regionValue) => {
-    const year = layerId.split("-").pop();
+  const handleLayerToggle = (layerIdRaw, isChecked, parentValue = null) => {
+    const layerId = parentValue ? `${parentValue}-${layerIdRaw}` : layerIdRaw;
 
-    if (isChecked && regionValue) {
-      fetchForestData(regionValue, year);
+    // Handle forest data
+    if (layerIdRaw.match(/^\d{4}$/) && parentValue) {
+      fetchForestData(parentValue, layerIdRaw);
+    } else if (parentValue && (parentValue === "POP_MAY202" || parentValue === "PopDensity")) {
+      fetchPopulationData(parentValue, layerIdRaw);
     }
 
     setVisibleLayers((prev) => ({
@@ -26,33 +28,13 @@ function DrawerA() {
     }));
   };
 
-  // Population
-  const handlePopulationToggle = async (dataType, region, isChecked) => {
-    const layerId = `${dataType}-${region}`;
-
-    if (isChecked) {
-      try {
-        const data = await fetchPopulationData(dataType, region);
-        // You'll need to implement logic to add this data to the map
-        // This might involve updating your Map component's state
-      } catch (error) {
-        console.error("Error loading population data:", error);
-        return;
-      }
-    }
-
-    setVisibleLayers((prev) => ({
-      ...prev,
-      [layerId]: isChecked,
-    }));
-  };
-
-  const renderLayerItem = (layer, regionValue = null) => {
+  const renderLayerItem = (layer, parentValue = null) => {
     const layerObj = typeof layer === "string" ? { id: layer, label: layer } : layer;
-    const layerId = regionValue ? `${regionValue}-${layerObj.id}` : layerObj.id;
+    const layerId = parentValue ? `${parentValue}-${layerObj.id}` : layerObj.id;
+
     return (
       <li key={layerId}>
-        <input type="checkbox" id={layerId} checked={visibleLayers[layerId] || false} onChange={(e) => handleLayerToggle(layerId, e.target.checked, regionValue)} />
+        <input type="checkbox" id={layerId} checked={visibleLayers[layerId] || false} onChange={(e) => handleLayerToggle(layerObj.id, e.target.checked, parentValue)} />
         <label htmlFor={layerId}>{layerObj.label}</label>
       </li>
     );

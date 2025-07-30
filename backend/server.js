@@ -6,7 +6,7 @@ const sql = require("mssql");
 const app = express();
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN,
+    origin: [process.env.CLIENT_ORIGIN, process.env.GEOSERVER_ORIGIN],
     credentials: true,
   })
 );
@@ -35,14 +35,12 @@ sql
 
       try {
         const testRoutes = require("./routes/test")(pool);
-        app.use("/test", testRoutes);
-      } catch (err) {
-        console.error("Error setting up routes:", err);
-      }
-
-      try {
         const layerRoutes = require("./routes/getLayers")(pool);
+        const geoserverRoutes = require("./routes/geoserverProxy")(pool);
+
+        app.use("/test", testRoutes);
         app.use("/layer", layerRoutes);
+        app.use("/api/geoserver", geoserverRoutes);
       } catch (err) {
         console.error("Error setting up routes:", err);
       }
