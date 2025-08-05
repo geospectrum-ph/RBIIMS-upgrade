@@ -74,20 +74,17 @@ export default function Map({ visibleLayers }) {
   useEffect(() => {
     if (!map.current) return;
 
-    // Add or update forest cover layers when data changes
     Object.entries(forestCoverData).forEach(([key, features]) => {
       const [region, year] = key.split("-");
-      const sourceId = `forest-cover-${region}-${year}`;
-      const layerId = `forest-cover-layer-${region}-${year}`;
+      const sourceId = `forest-loss-${region}-${year}`;
+      const layerId = `forest-loss-layer-${region}-${year}`;
 
-      // Check if source already exists
       if (map.current.getSource(sourceId)) {
         map.current.getSource(sourceId).setData({
           type: "FeatureCollection",
           features,
         });
       } else {
-        // Add new source and layer
         map.current.addSource(sourceId, {
           type: "geojson",
           data: {
@@ -101,28 +98,15 @@ export default function Map({ visibleLayers }) {
           type: "heatmap",
           source: sourceId,
           maxzoom: 16,
-          paint: {
-            "heatmap-weight": ["interpolate", ["linear"], ["get", "mag"], 0, 0, 6, 1],
-            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0, 9, 1, 11, 3],
-            "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(33,102,172,0)", 0.2, "rgb(103,169,207)", 0.4, "rgb(209,229,240)", 0.6, "rgb(253,219,199)", 0.8, "rgb(239,138,98)", 1, "rgb(178,24,43)"],
-            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 2, 9, 20],
-            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 11, 0],
-          },
+          paint: VECTOR_LAYERS.find((l) => l.id === "FOREST_LOSS").paint,
         });
 
-        // Add circle layer for higher zoom levels
         map.current.addLayer({
           id: `${layerId}-points`,
           type: "circle",
           source: sourceId,
           minzoom: 10,
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 7, ["interpolate", ["linear"], ["get", "mag"], 1, 1, 6, 4], 16, ["interpolate", ["linear"], ["get", "mag"], 1, 5, 6, 50]],
-            "circle-color": ["interpolate", ["linear"], ["get", "mag"], 1, "rgba(33,102,172,0)", 2, "rgb(103,169,207)", 3, "rgb(209,229,240)", 4, "rgb(253,219,199)", 5, "rgb(239,138,98)", 6, "rgb(178,24,43)"],
-            "circle-stroke-color": "white",
-            "circle-stroke-width": 1,
-            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0, 8, 1],
-          },
+          paint: VECTOR_LAYERS.find((l) => l.id === "FOREST_LOSS_POINTS").paint,
         });
       }
     });
@@ -132,27 +116,36 @@ export default function Map({ visibleLayers }) {
   useEffect(() => {
     if (!map.current) return;
 
-    Object.entries(visibleLayers).forEach(([layerId, isVisible]) => {
-      if (layerId.startsWith("POP_MAY202-") || layerId.startsWith("PopDensity-")) {
-        const [dataType, region] = layerId.split("-");
-        const layerIdToShow = `population-layer-${dataType}-${region}`;
+    Object.entries(populationData).forEach(([key, features]) => {
+      const [dataType, region] = key.split("-");
+      const sourceId = `population-${dataType}-${region}`;
+      const layerId = `population-layer-${dataType}-${region}`;
 
-        if (map.current.getLayer(layerIdToShow)) {
-          map.current.setLayoutProperty(layerIdToShow, "visibility", isVisible ? "visible" : "none");
-        }
-      }
+      if (!map.current.getSource(sourceId)) {
+        map.current.addSource(sourceId, {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features,
+          },
+        });
 
-      if (layerId.includes("-")) {
-        const [region, year] = layerId.split("-");
-        const baseLayerId = `forest-cover-layer-${region}-${year}`;
+        const paintConfig = dataType === "POP_MAY202" ? VECTOR_LAYERS.find((l) => l.id === "POP_MAY202").paint : VECTOR_LAYERS.find((l) => l.id === "PopDensity").paint;
 
-        if (map.current.getLayer(baseLayerId)) {
-          map.current.setLayoutProperty(baseLayerId, "visibility", isVisible ? "visible" : "none");
-          map.current.setLayoutProperty(`${baseLayerId}-points`, "visibility", isVisible ? "visible" : "none");
-        }
+        map.current.addLayer({
+          id: layerId,
+          type: "fill",
+          source: sourceId,
+          paint: paintConfig,
+        });
+      } else {
+        map.current.getSource(sourceId).setData({
+          type: "FeatureCollection",
+          features,
+        });
       }
     });
-  }, [visibleLayers]);
+  }, [populationData]);
 
   // Database page
   useEffect(() => {
@@ -216,7 +209,6 @@ export default function Map({ visibleLayers }) {
     if (!map.current) return;
 
     setIsMapLoading(true);
-
     map.current.on("dataloading", (e) => {
       if (e.dataType === "source" && e.sourceDataType === "tile") {
         setIsMapLoading(true);
@@ -226,25 +218,45 @@ export default function Map({ visibleLayers }) {
     map.current.on("idle", () => {
       setIsMapLoading(false); // All tiles are loaded
     });
-
+    // Handle standard vector layers
     VECTOR_LAYERS.forEach(({ id, mapLayerId }) => {
       if (map.current.getLayer(mapLayerId)) {
         map.current.setLayoutProperty(mapLayerId, "visibility", visibleLayers[id] ? "visible" : "none");
       }
     });
 
-    // Handle TWI layer visibility
+    // Handle TWI, Slope, Hillshade
     if (map.current.getLayer("twi-layer")) {
-      map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["Topographic Wetness Index"] ? "visible" : "none");
+      map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["twi"] ? "visible" : "none");
     }
-    // Handle Slope layer visibility
     if (map.current.getLayer("slope-layer")) {
-      map.current.setLayoutProperty("slope-layer", "visibility", visibleLayers["Slope"] ? "visible" : "none");
+      map.current.setLayoutProperty("slope-layer", "visibility", visibleLayers["slope"] ? "visible" : "none");
     }
-    // Handle HilLshdde layer visibility
     if (map.current.getLayer("hillshade-layer")) {
-      map.current.setLayoutProperty("hillshade-layer", "visibility", visibleLayers["Hillshade"] ? "visible" : "none");
+      map.current.setLayoutProperty("hillshade-layer", "visibility", visibleLayers["hillshade"] ? "visible" : "none");
     }
+
+    // Handle population and forest loss layers
+    Object.entries(visibleLayers).forEach(([layerId, isVisible]) => {
+      if (layerId.startsWith("POP_MAY202-") || layerId.startsWith("PopDensity-")) {
+        const [dataType, region] = layerId.split("-");
+        const layerIdToShow = `population-layer-${dataType}-${region}`;
+
+        if (map.current.getLayer(layerIdToShow)) {
+          map.current.setLayoutProperty(layerIdToShow, "visibility", isVisible ? "visible" : "none");
+        }
+      }
+
+      if (layerId.includes("-") && layerId.split("-")[1].match(/^\d{4}$/)) {
+        const [region, year] = layerId.split("-");
+        const baseLayerId = `forest-loss-layer-${region}-${year}`;
+
+        if (map.current.getLayer(baseLayerId)) {
+          map.current.setLayoutProperty(baseLayerId, "visibility", isVisible ? "visible" : "none");
+          map.current.setLayoutProperty(`${baseLayerId}-points`, "visibility", isVisible ? "visible" : "none");
+        }
+      }
+    });
   }, [visibleLayers]);
 
   // Population and hover effect

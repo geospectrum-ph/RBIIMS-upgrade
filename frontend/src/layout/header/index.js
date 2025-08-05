@@ -17,7 +17,7 @@ function Header() {
           <a className={page === "database" ? "active" : ""} href="#home" onClick={()=>setPage("database")}>
             Database
           </a>
-          <a className={page === "analytics" ? "active" : ""} onClick={()=>setPage("analytics")}>Analytics</a>
+          {/* <a className={page === "analytics" ? "active" : ""} onClick={()=>setPage("analytics")}>Analytics</a> */}
         </div>
       </div>
     </>

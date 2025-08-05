@@ -1,3 +1,4 @@
+// Replace the existing Drawer.js with this updated version
 import React, { useState } from "react";
 import "./index.css";
 import { MapContext } from "../../context/MapContext";
@@ -11,19 +12,19 @@ function Drawer() {
     document.body.classList.toggle("sidebar-open", !isOpen);
   };
 
-  const handleLayerToggle = (layerId, isChecked, parentValue = null) => {
-    const fullLayerId = parentValue ? `${parentValue}-${layerId}` : layerId;
-    
-    // Handle special cases
-    if (parentValue === "FOREST_LOSS") {
-      fetchForestData(layerId, "2022"); // Default year or let user select
-    } else if (parentValue === "POP_MAY202" || parentValue === "PopDensity") {
-      fetchPopulationData(parentValue, layerId);
+  const handleLayerToggle = (layerIdRaw, isChecked, parentValue = null) => {
+    const layerId = parentValue ? `${parentValue}-${layerIdRaw}` : layerIdRaw;
+
+    // Handle forest data
+    if (layerIdRaw.match(/^\d{4}$/) && parentValue) {
+      fetchForestData(parentValue, layerIdRaw);
+    } else if (parentValue && (parentValue === "POP_MAY202" || parentValue === "PopDensity")) {
+      fetchPopulationData(parentValue, layerIdRaw);
     }
 
     setVisibleLayers((prev) => ({
       ...prev,
-      [fullLayerId]: isChecked,
+      [layerId]: isChecked,
     }));
   };
 
@@ -44,14 +45,28 @@ function Drawer() {
     );
   };
 
-  const renderGroup = (group, level = 0) => {
+  const renderSubGroups = (subGroups, level = 0) => {
+    return subGroups.map((subGroup, subIndex) => (
+      <li key={`subgroup-${level}-${subIndex}`} className="dropdown">
+        <details>
+          <summary>{subGroup.title}</summary>
+          <ul className={`nested-checkboxes level-${level}`}>
+            {subGroup.layers?.map((layer) => renderLayerItem(layer, subGroup.value))}
+            {subGroup.subGroups && renderSubGroups(subGroup.subGroups, level + 1)}
+          </ul>
+        </details>
+      </li>
+    ));
+  };
+
+  const renderGroup = (group) => {
     return (
       <div key={group.title} className="group-container">
-        <details open={level === 0}>
+        <details>
           <summary className="group-title">{group.title}</summary>
           <ul className="group-content">
-            {/* Render layers that are directly in the group */}
-            {group.layers?.map(layer => renderLayerItem(layer))}
+            {/* Render layers that are directly in the group (no subgroup) */}
+            {group.layers?.map((layer) => renderLayerItem(layer))}
             
             {/* Render subgroups */}
             {group.subGroups?.map((subGroup) => (
@@ -59,20 +74,15 @@ function Drawer() {
                 <details>
                   <summary className="subgroup-title">{subGroup.title}</summary>
                   <ul className="subgroup-content">
-                    {/* Render layers in subgroup */}
-                    {subGroup.layers?.map(layer => 
-                      renderLayerItem(layer, subGroup.value || subGroup.title)
-                    )}
+                    {subGroup.layers?.map((layer) => renderLayerItem(layer, subGroup.value))}
                     
-                    {/* Render nested subgroups */}
+                    {/* Render nested subgroups if they exist */}
                     {subGroup.subGroups?.map((nestedSubGroup) => (
                       <li key={nestedSubGroup.title} className="nested-subgroup">
                         <details>
                           <summary className="nested-subgroup-title">{nestedSubGroup.title}</summary>
                           <ul className="nested-subgroup-content">
-                            {nestedSubGroup.layers?.map(layer => 
-                              renderLayerItem(layer, subGroup.value || subGroup.title)
-                            )}
+                            {nestedSubGroup.layers?.map((layer) => renderLayerItem(layer, nestedSubGroup.value))}
                           </ul>
                         </details>
                       </li>
@@ -90,11 +100,11 @@ function Drawer() {
   return (
     <div className={`sidebar ${isOpen ? "open" : ""}`}>
       <button className="toggle-btn" onClick={toggleSidebar}>
-        <span className="sidebar-title">Layers</span>
+        <span className="sidebar-title">Database & Analytics</span>
         <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
       </button>
       <div className="sidebar-content">
-        {LAYER_GROUPS.map(group => renderGroup(group))}
+        {LAYER_GROUPS.map(renderGroup)}
       </div>
     </div>
   );
