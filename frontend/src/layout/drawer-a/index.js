@@ -12,6 +12,10 @@ function DrawerA() {
     document.body.classList.toggle("sidebar-open", !isOpen);
   };
 
+  // const toggleSidebar1 = () => {
+  //   console.log(visibleLayers);
+  // };
+
   const handleLayerToggle = (layerIdRaw, isChecked, parentValue = null) => {
     const layerId = parentValue ? `${parentValue}-${layerIdRaw}` : layerIdRaw;
 
@@ -60,6 +64,7 @@ function DrawerA() {
         <span className="sidebar-title">Analytics</span>
         <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
       </button>
+      {/* <button onClick={toggleSidebar1}>test</button> */}
       <div className="sidebar-content">
         {ANA_GROUPS.map((group, index) => (
           <React.Fragment key={index}>

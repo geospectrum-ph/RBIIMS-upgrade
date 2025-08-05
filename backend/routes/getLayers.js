@@ -168,7 +168,7 @@ module.exports = (db) => {
 
   router.get("/getPopulationData", (req, res) => {
     const { type, region } = req.query;
-
+    console.log(type,region )
     const colMap = {
       POP_MAY202: "POP_MAY202",
       PopDensity: "PopDensity",

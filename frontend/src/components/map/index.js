@@ -6,11 +6,13 @@ import "@watergis/maplibre-gl-legend/dist/maplibre-gl-legend.css";
 import "./index.css";
 import { MapContext } from "../../context/MapContext";
 import { LayoutContext } from "../../context/LayoutContext";
+import LoadingIndicator from "../../services/LoadingIndicator";
 
 export default function Map({ visibleLayers }) {
   const [riverBasin, setRiverBasin] = React.useState([]);
   const [roadNetworks, setRoadNetworks] = React.useState([]);
   const [forestCover, setForestCover] = React.useState([]);
+  const [isMapLoading, setIsMapLoading] = React.useState(false);
 
   const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData } = React.useContext(MapContext);
   const { page } = React.useContext(LayoutContext);
@@ -21,26 +23,6 @@ export default function Map({ visibleLayers }) {
   const lat = 12.6042;
   const zoom = 5.5;
   // const API_KEY = 'YOUR_MAPTILER_API_KEY_HERE';
-
-  const style = {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        attribution: "&copy; OpenStreetMap Contributors",
-        maxzoom: 19,
-      },
-    },
-    layers: [
-      {
-        id: "osm",
-        type: "raster",
-        source: "osm", // This must match the source key above
-      },
-    ],
-  };
 
   async function getRoadNetworks() {
     const url = "http://localhost:1433/layer/getRoadNetworks";
@@ -183,9 +165,6 @@ export default function Map({ visibleLayers }) {
       zoom: zoom,
     });
 
-    // getRoadNetworks();
-    // getNationalRoad();
-
     map.current.on("load", () => {
       VECTOR_LAYERS.forEach((layerConfig) => {
         if (!layerConfig.existsInStyle && map.current.getSource(layerConfig.source)) {
@@ -236,6 +215,18 @@ export default function Map({ visibleLayers }) {
   useEffect(() => {
     if (!map.current) return;
 
+    setIsMapLoading(true);
+
+    map.current.on("dataloading", (e) => {
+      if (e.dataType === "source" && e.sourceDataType === "tile") {
+        setIsMapLoading(true);
+      }
+    });
+
+    map.current.on("idle", () => {
+      setIsMapLoading(false); // All tiles are loaded
+    });
+
     VECTOR_LAYERS.forEach(({ id, mapLayerId }) => {
       if (map.current.getLayer(mapLayerId)) {
         map.current.setLayoutProperty(mapLayerId, "visibility", visibleLayers[id] ? "visible" : "none");
@@ -244,7 +235,7 @@ export default function Map({ visibleLayers }) {
 
     // Handle TWI layer visibility
     if (map.current.getLayer("twi-layer")) {
-      map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["Topograhic Wetness Index"] ? "visible" : "none");
+      map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["Topographic Wetness Index"] ? "visible" : "none");
     }
     // Handle Slope layer visibility
     if (map.current.getLayer("slope-layer")) {
@@ -416,6 +407,7 @@ export default function Map({ visibleLayers }) {
 
   return (
     <div className="map-wrap">
+      {isMapLoading && <LoadingIndicator />}
       <div ref={mapContainer} className="map" />
     </div>
   );
