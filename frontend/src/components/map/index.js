@@ -131,6 +131,51 @@ export default function Map({ visibleLayers }) {
     };
   }, [lng, lat, zoom]);
 
+  useEffect(() => {
+  if (!map.current) return;
+
+  // Add sources and layers for uploaded data
+  uploadedLayers.forEach(layer => {
+    const sourceId = layer.source;
+    const layerId = layer.id;
+
+    if (!map.current.getSource(sourceId)) {
+      map.current.addSource(sourceId, {
+        type: 'geojson',
+        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=${layerId}`
+      });
+
+      map.current.addLayer({
+        id: layerId,
+        type: layer.type,
+        source: sourceId,
+        paint: layer.paint,
+        layout: {
+          visibility: visibleLayers[layerId] ? 'visible' : 'none'
+        }
+      });
+    } else {
+      map.current.setLayoutProperty(
+        layerId,
+        'visibility',
+        visibleLayers[layerId] ? 'visible' : 'none'
+      );
+    }
+  });
+
+  // Cleanup function
+  return () => {
+    uploadedLayers.forEach(layer => {
+      if (map.current && map.current.getLayer(layer.id)) {
+        map.current.removeLayer(layer.id);
+      }
+      if (map.current && map.current.getSource(layer.source)) {
+        map.current.removeSource(layer.source);
+      }
+    });
+  };
+}, [uploadedLayers, visibleLayers]);
+
   // In your Map.js component
   useEffect(() => {
     if (!map.current) return;

@@ -7,7 +7,6 @@ const GEOSERVER_USER = process.env.GEOSERVER_USER;
 const GEOSERVER_PASS = process.env.GEOSERVER_PASS;
 
 module.exports = (db) => {
-  
   // vector proxy
   router.get("/:layer", async (req, res) => {
     const { layer } = req.params;
@@ -190,35 +189,62 @@ module.exports = (db) => {
 
   // raster proxy
   router.get("/", async (req, res) => {
-    try {
-      const params = {
-        service: "WMS",
-        version: "1.1.1",
-        request: "GetMap",
-        layers: req.query.layer,
-        styles: "",
-        bbox: req.query.bbox,
-        width: req.query.width || "256",
-        height: req.query.height || "256",
-        srs: req.query.srs || "EPSG:3857",
-        format: "image/png",
-        transparent: "true",
-      };
+    const { layer } = req.query;
 
-      const response = await axios.get(GEOSERVER_URL, {
-        responseType: "arraybuffer", // So image data is returned correctly
-        params,
-        auth: {
-          username: GEOSERVER_USER,
-          password: GEOSERVER_PASS,
-        },
-      });
+    if (layer.startsWith("uploaded_")) {
+      try {
+        const result = await pool.request().query(`
+        SELECT 
+          geom.ToString() as geometry,
+          *
+        FROM [${layer}]
+        FOR JSON PATH
+      `);
 
-      res.set("Content-Type", "image/png");
-      res.send(response.data);
-    } catch (error) {
-      console.error("WMS proxy error:", error.message);
-      res.status(500).send("Failed to fetch WMS tile.");
+        const features = JSON.parse(result.recordset[0][""]);
+        res.json({
+          type: "FeatureCollection",
+          features: features.map((f) => ({
+            type: "Feature",
+            geometry: JSON.parse(f.geometry),
+            properties: Object.fromEntries(Object.entries(f).filter(([k]) => k !== "geometry")),
+          })),
+        });
+      } catch (error) {
+        console.error(`Error fetching uploaded layer ${layer}:`, error);
+        res.status(500).json({ error: error.message });
+      }
+    } else {
+      try {
+        const params = {
+          service: "WMS",
+          version: "1.1.1",
+          request: "GetMap",
+          layers: req.query.layer,
+          styles: "",
+          bbox: req.query.bbox,
+          width: req.query.width || "256",
+          height: req.query.height || "256",
+          srs: req.query.srs || "EPSG:3857",
+          format: "image/png",
+          transparent: "true",
+        };
+
+        const response = await axios.get(GEOSERVER_URL, {
+          responseType: "arraybuffer", // So image data is returned correctly
+          params,
+          auth: {
+            username: GEOSERVER_USER,
+            password: GEOSERVER_PASS,
+          },
+        });
+
+        res.set("Content-Type", "image/png");
+        res.send(response.data);
+      } catch (error) {
+        console.error("WMS proxy error:", error.message);
+        res.status(500).send("Failed to fetch WMS tile.");
+      }
     }
   });
 
@@ -245,7 +271,7 @@ module.exports = (db) => {
           password: GEOSERVER_PASS,
         },
       });
-      console.log(response)
+      console.log(response);
       res.json(response.data);
     } catch (err) {
       console.error("GeoServer proxy error:", err.message);

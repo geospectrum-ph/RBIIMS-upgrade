@@ -62,54 +62,50 @@ function MapContextProvider(props) {
     }
   };
 
- // In your MapContext.js
-const uploadShapefile = async (files, layerName, groupName) => {
+  // In your MapContext.js
+  const uploadShapefile = async (files, layerName, groupName) => {
     try {
-        const formData = new FormData();
-        Array.from(files).forEach(file => {
-            formData.append(file.name.endsWith('.shp') ? 'shp' : 
-                         file.name.endsWith('.dbf') ? 'dbf' : 
-                         file.name.endsWith('.prj') ? 'prj' : 'file', 
-                         file);
-        });
-        formData.append('tableName', layerName);
-        formData.append('groupName', groupName);
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append(file.name.endsWith(".shp") ? "shp" : file.name.endsWith(".dbf") ? "dbf" : file.name.endsWith(".prj") ? "prj" : "file", file);
+      });
+      formData.append("tableName", layerName);
+      formData.append("groupName", groupName);
 
-        const response = await axios.post(`${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/shapefiles`, 
-            formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/shapefiles`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-        const newLayer = {
-            id: layerName,
-            name: layerName,
-            group: groupName,
-            type: 'fill',
-            source: `uploaded-${layerName}`,
-            columns: response.data.columns, // Store column information
-            paint: {
-                'fill-color': getRandomColor(),
-                'fill-opacity': 0.7,
-                'fill-outline-color': '#000'
-            }
-        };
+      const newLayer = {
+        id: layerName,
+        name: layerName,
+        group: groupName,
+        type: "fill",
+        source: `uploaded-${layerName}`,
+        columns: response.data.columns, // Store column information
+        paint: {
+          "fill-color": getRandomColor(),
+          "fill-opacity": 0.7,
+          "fill-outline-color": "#000",
+        },
+      };
 
-        setUploadedLayers(prev => [...prev, newLayer]);
-        return { success: true, layer: newLayer };
+      setUploadedLayers((prev) => [...prev, newLayer]);
+      return { success: true, layer: newLayer };
     } catch (error) {
-        console.error('Upload failed:', error);
-        return { success: false, error: error.response?.data?.error || error.message };
+      console.error("Upload failed:", error);
+      return { success: false, error: error.response?.data?.error || error.message };
     }
-};
+  };
 
   const fetchUploadedLayers = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/uploaded-layers`);
       const layers = response.data.map((layer) => ({
         id: layer.table_name,
-        name: layer.layer_name,
+        label: layer.layer_name,
         group: layer.group_name,
         type: "fill",
         source: `uploaded-${layer.table_name}`,

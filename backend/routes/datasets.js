@@ -186,6 +186,7 @@ module.exports = (pool) => {
       const result = await pool.request().query(`
         SELECT * FROM user_layers ORDER BY created_at DESC
       `);
+      console.log(result.recordset);
       res.json(result.recordset);
     } catch (error) {
       console.error("Error fetching uploaded layers:", error);
