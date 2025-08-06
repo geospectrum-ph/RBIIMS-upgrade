@@ -1,8 +1,13 @@
 import * as React from "react";
 
-export const MapContext = React.createContext();
+export const MapContext = React.createContext({
+  moveLayerUp: () => {},
+  moveLayerDown: () => {},
+  setMapInstance: () => {},
+});
 
 function MapContextProvider(props) {
+  const [mapInstance, setMapInstance] = React.useState(null);
   const url_dem = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_30meters_DEM_Philippines_clipped&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_twi = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_TWI&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_slope = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_Slope&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
@@ -48,6 +53,38 @@ function MapContextProvider(props) {
       }));
     } catch (error) {
       console.error("Error fetching population data:", error);
+    }
+  };
+
+  const moveLayerUp = (layerId) => {
+    if (!mapInstance) return;
+    console.log("testup");
+    const currentOrder = mapInstance
+      .getStyle()
+      .layers.filter((l) => visibleLayers[l.id] || visibleLayers[l.id?.split("-")[0]])
+      .map((l) => l.id);
+
+    const currentIndex = currentOrder.indexOf(layerId);
+    if (currentIndex <= 0) return;
+
+    mapInstance.moveLayer(layerId, currentOrder[currentIndex - 1]);
+  };
+
+  const moveLayerDown = (layerId) => {
+    if (!mapInstance) return;
+    console.log("testdown");
+    const currentOrder = mapInstance
+      .getStyle()
+      .layers.filter((l) => visibleLayers[l.id] || visibleLayers[l.id?.split("-")[0]])
+      .map((l) => l.id);
+
+    const currentIndex = currentOrder.indexOf(layerId);
+    if (currentIndex === -1 || currentIndex >= currentOrder.length - 1) return;
+
+    if (currentIndex < currentOrder.length - 2) {
+      mapInstance.moveLayer(layerId, currentOrder[currentIndex + 2]);
+    } else {
+      mapInstance.moveLayer(layerId);
     }
   };
 
@@ -367,9 +404,9 @@ function MapContextProvider(props) {
       ],
       layers: [
         { id: "srtm-dem", label: "Digital Elevation Model" },
-        { id: "hillshade", label: "Hillshade" }, // from analytics
-        { id: "twi", label: "Topographic Wetness Index" }, // from analytics
-        { id: "slope", label: "Slope" }, // from analytics
+        { id: "hillshade", label: "Hillshade" },
+        { id: "twi", label: "Topographic Wetness Index" },
+        { id: "slope", label: "Slope" },
         { id: "tpi", label: "Topographic Position Index" },
         { id: "tc", label: "Topographic Contour" },
         { id: "rough", label: "Roughness" },
@@ -398,6 +435,10 @@ function MapContextProvider(props) {
         { id: "protected-seascape", label: "Protected Seascape" },
         { id: "kba", label: "Key Biodiversity Areas" },
       ],
+    },
+    {
+      title: "Aquatic and Marine Monitoring",
+      layers: [{ id: "", label: "Surficial Sediment Survey" }],
     },
     {
       title: "Demographics",
@@ -526,7 +567,7 @@ function MapContextProvider(props) {
       title: "Industry and Commerce",
       layers: [{ id: "", label: "Manufacturing Sector Inventory" }],
     },
-    // Add your other groups here following the same pattern
+    // other groups here
   ];
 
   const VECTOR_LAYERS = [
@@ -2540,7 +2581,7 @@ function MapContextProvider(props) {
     return initialState;
   });
 
-  return <MapContext.Provider value={{ url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData }}>{props.children}</MapContext.Provider>;
+  return <MapContext.Provider value={{ url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
 }
 
 export default MapContextProvider;

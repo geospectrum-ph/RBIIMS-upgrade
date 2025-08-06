@@ -7,11 +7,11 @@ const GEOSERVER_USER = process.env.GEOSERVER_USER;
 const GEOSERVER_PASS = process.env.GEOSERVER_PASS;
 
 module.exports = (db) => {
+  
   // vector proxy
   router.get("/:layer", async (req, res) => {
     const { layer } = req.params;
 
-    // Optional: whitelist allowed layers
     const allowedLayers = {
       nationalRoads: "GMS:hotosm_phl_roads_lines_shp",
       soilType: "GMS:daSoil",

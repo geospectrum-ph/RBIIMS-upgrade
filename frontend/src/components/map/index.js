@@ -14,7 +14,7 @@ export default function Map({ visibleLayers }) {
   const [forestCover, setForestCover] = React.useState([]);
   const [isMapLoading, setIsMapLoading] = React.useState(false);
 
-  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData } = React.useContext(MapContext);
+  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance } = React.useContext(MapContext);
   const { page } = React.useContext(LayoutContext);
 
   const mapContainer = useRef(null);
@@ -69,6 +69,67 @@ export default function Map({ visibleLayers }) {
       .map(([key, value]) => `<strong>${key}</strong>: ${value}`)
       .join("<br/>");
   }
+
+  // Database page
+  useEffect(() => {
+    if (map.current) return;
+
+    const mapInstance = new maplibregl.Map({
+      container: mapContainer.current,
+      style: MAP_STYLE,
+      center: [lng, lat],
+      zoom: zoom,
+    });
+
+    map.current = mapInstance;
+    setMapInstance(mapInstance);
+
+    map.current.on("load", () => {
+      VECTOR_LAYERS.forEach((layerConfig) => {
+        if (!layerConfig.existsInStyle && map.current.getSource(layerConfig.source)) {
+          map.current.addLayer({
+            id: layerConfig.mapLayerId,
+            type: layerConfig.type,
+            source: layerConfig.source,
+            layout: {
+              visibility: "none",
+            },
+            paint: layerConfig.paint,
+          });
+        }
+
+        // Add click event to display popup if layer type is fill or line
+        if (layerConfig.type === "fill" || layerConfig.type === "line") {
+          map.current.on("click", layerConfig.mapLayerId, (e) => {
+            const feature = e.features[0];
+            const props = feature?.properties;
+            const coords = e.lngLat;
+
+            new maplibregl.Popup()
+              .setLngLat(coords)
+              .setHTML(`<strong>${layerConfig.id}</strong><br/>${formatProperties(props)}`)
+              .addTo(map.current);
+          });
+
+          map.current.on("mouseenter", layerConfig.mapLayerId, () => {
+            map.current.getCanvas().style.cursor = "pointer";
+          });
+
+          map.current.on("mouseleave", layerConfig.mapLayerId, () => {
+            map.current.getCanvas().style.cursor = "";
+          });
+        }
+      });
+    });
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+      setMapInstance(null); // Clean up
+    };
+  }, [lng, lat, zoom]);
 
   // Forest Cover Loss
   useEffect(() => {
@@ -146,63 +207,6 @@ export default function Map({ visibleLayers }) {
       }
     });
   }, [populationData]);
-
-  // Database page
-  useEffect(() => {
-    if (map.current) return;
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: MAP_STYLE,
-      center: [lng, lat],
-      zoom: zoom,
-    });
-
-    map.current.on("load", () => {
-      VECTOR_LAYERS.forEach((layerConfig) => {
-        if (!layerConfig.existsInStyle && map.current.getSource(layerConfig.source)) {
-          map.current.addLayer({
-            id: layerConfig.mapLayerId,
-            type: layerConfig.type,
-            source: layerConfig.source,
-            layout: {
-              visibility: "none",
-            },
-            paint: layerConfig.paint,
-          });
-        }
-
-        // Add click event to display popup if layer type is fill or line
-        if (layerConfig.type === "fill" || layerConfig.type === "line") {
-          map.current.on("click", layerConfig.mapLayerId, (e) => {
-            const feature = e.features[0];
-            const props = feature?.properties;
-            const coords = e.lngLat;
-
-            new maplibregl.Popup()
-              .setLngLat(coords)
-              .setHTML(`<strong>${layerConfig.id}</strong><br/>${formatProperties(props)}`)
-              .addTo(map.current);
-          });
-
-          map.current.on("mouseenter", layerConfig.mapLayerId, () => {
-            map.current.getCanvas().style.cursor = "pointer";
-          });
-
-          map.current.on("mouseleave", layerConfig.mapLayerId, () => {
-            map.current.getCanvas().style.cursor = "";
-          });
-        }
-      });
-    });
-
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
-  }, [lng, lat, zoom]);
 
   // handles visibleLayers changes RASTER:
   useEffect(() => {

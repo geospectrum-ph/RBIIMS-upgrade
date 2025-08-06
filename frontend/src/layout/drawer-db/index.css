@@ -4,7 +4,7 @@
   top: 60px;
   left: 0;
   height: calc(100vh - 60px);
-  width: 315px;
+  width: 370px;
   background-color: #e6e6e6;
   transition: all 0.3s ease;
   overflow-y: auto;
@@ -16,7 +16,7 @@
   width: 60px;
 }
 
-/* Completely hide all content when sidebar is closed */
+/* content when sidebar is closed */
 .sidebar:not(.open) .sidebar-content > * {
   opacity: 0;
   height: 0;
@@ -25,7 +25,6 @@
   padding: 0;
 }
 
-/* Toggle button styles */
 .toggle-btn {
   display: flex;
   align-items: center;
@@ -55,7 +54,6 @@
   padding-left: 55px;
 }
 
-/* When sidebar is closed */
 .sidebar:not(.open) .sidebar-title {
   opacity: 0;
   width: 0;
@@ -68,7 +66,6 @@
   transform: translateX(-50%);
 }
 
-/* Sidebar content */
 .sidebar-content {
   padding: 10px;
 }
@@ -131,7 +128,7 @@
   align-items: center;
 }
 
-/* Checkbox styling - ensure they're hidden when sidebar is closed */
+
 .sidebar:not(.open) input[type="checkbox"] {
   display: none;
 }
@@ -153,7 +150,7 @@ label:hover {
   color: #3498db;
 }
 
-/* Details/summary styling */
+
 details > summary {
   list-style: none;
 }
@@ -171,7 +168,7 @@ details[open] summary::after {
   content: "-";
 }
 
-/* Nested dropdown animation */
+
 details[open] .subgroup-content,
 details[open] .nested-subgroup-content {
   animation: fadeIn 0.3s ease;
@@ -182,7 +179,6 @@ details[open] .nested-subgroup-content {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Ensure proper spacing for nested groups */
 .subgroup {
   margin-left: 5px;
 }
@@ -190,3 +186,54 @@ details[open] .nested-subgroup-content {
 .nested-subgroup {
   margin-left: 15px;
 }
+
+
+.visible-layers-section {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.visible-layers-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.visible-layer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.layer-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.layer-controls button {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 2px 5px;
+  font-size: 12px;
+}
+
+.layer-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.layer-controls button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.no-layers-message {
+  color: #666;
+  font-style: italic;
+  padding: 8px 0;
+}
+
