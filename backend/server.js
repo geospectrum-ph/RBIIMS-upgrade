@@ -2,14 +2,20 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const sql = require("mssql");
+const fileUpload = require("express-fileupload"); // Add this
 
 const app = express();
+
 app.use(
   cors({
     origin: [process.env.CLIENT_ORIGIN, process.env.GEOSERVER_ORIGIN],
     credentials: true,
   })
 );
+
+app.use(express.json());
+app.use(fileUpload()); // Add this for file uploads
+app.use(express.static('uploads')); // Serve uploaded files
 
 const port = process.env.PORT || 1433;
 
@@ -37,9 +43,11 @@ sql
         const testRoutes = require("./routes/test")(pool);
         const layerRoutes = require("./routes/getLayers")(pool);
         const geoserverRoutes = require("./routes/geoserverProxy")(pool);
+        const datasetsRoutes = require("./routes/datasets")(pool);
 
         app.use("/test", testRoutes);
         app.use("/layer", layerRoutes);
+        app.use("/datasets", datasetsRoutes);
         app.use("/api/geoserver", geoserverRoutes);
       } catch (err) {
         console.error("Error setting up routes:", err);

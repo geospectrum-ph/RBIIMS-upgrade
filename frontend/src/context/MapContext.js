@@ -1,13 +1,19 @@
 import * as React from "react";
+import axios from "axios";
+import * as shp from "shpjs";
 
 export const MapContext = React.createContext({
   moveLayerUp: () => {},
   moveLayerDown: () => {},
   setMapInstance: () => {},
+  uploadShapefile: () => {},
+  uploadedLayers: [],
+  addUploadedLayerToGroup: () => {},
 });
 
 function MapContextProvider(props) {
   const [mapInstance, setMapInstance] = React.useState(null);
+  const [uploadedLayers, setUploadedLayers] = React.useState([]);
   const url_dem = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_30meters_DEM_Philippines_clipped&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_twi = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_TWI&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_slope = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_Slope&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
@@ -54,6 +60,75 @@ function MapContextProvider(props) {
     } catch (error) {
       console.error("Error fetching population data:", error);
     }
+  };
+
+ // In your MapContext.js
+const uploadShapefile = async (files, layerName, groupName) => {
+    try {
+        const formData = new FormData();
+        Array.from(files).forEach(file => {
+            formData.append(file.name.endsWith('.shp') ? 'shp' : 
+                         file.name.endsWith('.dbf') ? 'dbf' : 
+                         file.name.endsWith('.prj') ? 'prj' : 'file', 
+                         file);
+        });
+        formData.append('tableName', layerName);
+        formData.append('groupName', groupName);
+
+        const response = await axios.post(`${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/shapefiles`, 
+            formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+        const newLayer = {
+            id: layerName,
+            name: layerName,
+            group: groupName,
+            type: 'fill',
+            source: `uploaded-${layerName}`,
+            columns: response.data.columns, // Store column information
+            paint: {
+                'fill-color': getRandomColor(),
+                'fill-opacity': 0.7,
+                'fill-outline-color': '#000'
+            }
+        };
+
+        setUploadedLayers(prev => [...prev, newLayer]);
+        return { success: true, layer: newLayer };
+    } catch (error) {
+        console.error('Upload failed:', error);
+        return { success: false, error: error.response?.data?.error || error.message };
+    }
+};
+
+  const fetchUploadedLayers = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/uploaded-layers`);
+      const layers = response.data.map((layer) => ({
+        id: layer.table_name,
+        name: layer.layer_name,
+        group: layer.group_name,
+        type: "fill",
+        source: `uploaded-${layer.table_name}`,
+        paint: {
+          "fill-color": getRandomColor(),
+          "fill-opacity": 0.7,
+        },
+      }));
+      setUploadedLayers(layers);
+      return layers;
+    } catch (error) {
+      console.error("Error fetching uploaded layers:", error);
+      return [];
+    }
+  };
+
+  // Helper function for random colors
+  const getRandomColor = () => {
+    return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   };
 
   const moveLayerUp = (layerId) => {
@@ -2581,7 +2656,7 @@ function MapContextProvider(props) {
     return initialState;
   });
 
-  return <MapContext.Provider value={{ url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
+  return <MapContext.Provider value={{ uploadShapefile, fetchUploadedLayers, uploadedLayers, setUploadedLayers, url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
 }
 
 export default MapContextProvider;

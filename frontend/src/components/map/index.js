@@ -14,7 +14,7 @@ export default function Map({ visibleLayers }) {
   const [forestCover, setForestCover] = React.useState([]);
   const [isMapLoading, setIsMapLoading] = React.useState(false);
 
-  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance } = React.useContext(MapContext);
+  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance, uploadedLayers } = React.useContext(MapContext);
   const { page } = React.useContext(LayoutContext);
 
   const mapContainer = useRef(null);
@@ -131,6 +131,55 @@ export default function Map({ visibleLayers }) {
     };
   }, [lng, lat, zoom]);
 
+  // In your Map.js component
+  useEffect(() => {
+    if (!map.current) return;
+
+    // Add click handler for uploaded layers
+    uploadedLayers.forEach((layer) => {
+      if (!map.current.getLayer(layer.id)) return;
+
+      map.current.on("click", layer.id, (e) => {
+        const feature = e.features[0];
+        if (!feature) return;
+
+        const properties = feature.properties;
+        let content = `<h3>${layer.name}</h3><table>`;
+
+        // Add geometry type
+        content += `<tr><td><strong>Geometry</strong></td><td>${feature.geometry.type}</td></tr>`;
+
+        // Add all properties as table rows
+        for (const [key, value] of Object.entries(properties)) {
+          content += `<tr><td><strong>${key}</strong></td><td>${value !== null ? value : "NULL"}</td></tr>`;
+        }
+
+        content += `</table>`;
+
+        new maplibregl.Popup().setLngLat(e.lngLat).setHTML(content).addTo(map.current);
+      });
+
+      // Change cursor on hover
+      map.current.on("mouseenter", layer.id, () => {
+        map.current.getCanvas().style.cursor = "pointer";
+      });
+
+      map.current.on("mouseleave", layer.id, () => {
+        map.current.getCanvas().style.cursor = "";
+      });
+    });
+
+    return () => {
+      // Clean up event listeners
+      uploadedLayers.forEach((layer) => {
+        if (map.current) {
+          map.current.off("click", layer.id);
+          map.current.off("mouseenter", layer.id);
+          map.current.off("mouseleave", layer.id);
+        }
+      });
+    };
+  }, [uploadedLayers]);
   // Forest Cover Loss
   useEffect(() => {
     if (!map.current) return;
