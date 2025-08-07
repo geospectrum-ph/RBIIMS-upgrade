@@ -106,7 +106,7 @@ module.exports = (pool) => {
 
       // Create table with dynamic columns
       let createTableQuery = `CREATE TABLE [${tableName}] (
-            id INT IDENTITY(1,1) PRIMARY KEY,
+            id BIGINT IDENTITY(1,1) PRIMARY KEY,
             geom GEOGRAPHY`;
 
       // Add property columns
@@ -155,7 +155,7 @@ module.exports = (pool) => {
       await pool.request().query(`
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='user_layers' AND xtype='U')
             CREATE TABLE user_layers (
-                id INT IDENTITY(1,1) PRIMARY KEY,
+                id BIGINT IDENTITY(1,1) PRIMARY KEY,
                 table_name NVARCHAR(255) NOT NULL,
                 layer_name NVARCHAR(255) NOT NULL,
                 group_name NVARCHAR(255) NOT NULL,

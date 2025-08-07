@@ -62,7 +62,6 @@ function MapContextProvider(props) {
     }
   };
 
-
   const uploadShapefile = async (files, layerName, groupName) => {
     try {
       const formData = new FormData();
@@ -76,6 +75,7 @@ function MapContextProvider(props) {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+      timeout: 300000,
       });
 
       const newLayer = {
