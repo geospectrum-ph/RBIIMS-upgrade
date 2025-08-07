@@ -8,6 +8,7 @@
     "dev": "nodemon backend/server.js"
   },
   "dependencies": {
+    "@terraformer/arcgis": "^2.1.2",
     "axios": "^1.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

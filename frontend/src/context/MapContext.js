@@ -62,7 +62,7 @@ function MapContextProvider(props) {
     }
   };
 
-  // In your MapContext.js
+
   const uploadShapefile = async (files, layerName, groupName) => {
     try {
       const formData = new FormData();
@@ -80,11 +80,10 @@ function MapContextProvider(props) {
 
       const newLayer = {
         id: layerName,
-        name: layerName,
+        label: layerName,
         group: groupName,
         type: "fill",
         source: `uploaded-${layerName}`,
-        columns: response.data.columns, // Store column information
         paint: {
           "fill-color": getRandomColor(),
           "fill-opacity": 0.7,
@@ -98,6 +97,16 @@ function MapContextProvider(props) {
       console.error("Upload failed:", error);
       return { success: false, error: error.response?.data?.error || error.message };
     }
+  };
+
+  // Helper function for random colors
+  const getRandomColor = () => {
+    const letters = "0123456789ABCDEF";
+    let color = "#";
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
   };
 
   const fetchUploadedLayers = async () => {
@@ -120,11 +129,6 @@ function MapContextProvider(props) {
       console.error("Error fetching uploaded layers:", error);
       return [];
     }
-  };
-
-  // Helper function for random colors
-  const getRandomColor = () => {
-    return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   };
 
   const moveLayerUp = (layerId) => {

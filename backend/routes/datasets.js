@@ -5,6 +5,60 @@ const shapefile = require("shapefile");
 const fs = require("fs");
 const path = require("path");
 
+function parseWKT(wkt) {
+  if (!wkt) return null;
+
+  const parts = wkt.match(/^([A-Z]+)\s*\((.*)\)$/i);
+  if (!parts) return null;
+
+  const geomType = parts[1].toUpperCase();
+  const coordsStr = parts[2];
+
+  try {
+    switch (geomType) {
+      case "POINT":
+        const pointCoords = coordsStr.split(" ").map(Number);
+        return {
+          type: "Point",
+          coordinates: pointCoords,
+        };
+      case "LINESTRING":
+        const lineCoords = coordsStr.split(",").map((pair) => pair.trim().split(" ").map(Number));
+        return {
+          type: "LineString",
+          coordinates: lineCoords,
+        };
+      case "POLYGON":
+        const rings = coordsStr.split("),(").map((ring) =>
+          ring
+            .replace(/[()]/g, "")
+            .split(",")
+            .map((pair) => pair.trim().split(" ").map(Number))
+        );
+        return {
+          type: "Polygon",
+          coordinates: rings,
+        };
+      case "MULTIPOLYGON":
+        const polygons = coordsStr.split(")),((").map((poly) =>
+          poly
+            .replace(/[()]/g, "")
+            .split("),(")
+            .map((ring) => ring.split(",").map((pair) => pair.trim().split(" ").map(Number)))
+        );
+        return {
+          type: "MultiPolygon",
+          coordinates: polygons,
+        };
+      default:
+        return null;
+    }
+  } catch (e) {
+    console.error("Error parsing WKT:", e);
+    return null;
+  }
+}
+
 module.exports = (pool) => {
   router.post("/shapefiles", async (req, res) => {
     if (!req.files || Object.keys(req.files).length === 0) {
@@ -175,24 +229,136 @@ module.exports = (pool) => {
   }
 
   function createGeography(geojson) {
-    if (geojson.type === "Point") {
-      return `geography::Point(${geojson.coordinates[1]}, ${geojson.coordinates[0]}, 4326)`;
+    if (!geojson || !geojson.type || !geojson.coordinates) {
+      throw new Error("Invalid GeoJSON");
     }
-    return `geography::STGeomFromText('${JSON.stringify(geojson)}', 4326)`;
+
+    const srid = 4326;
+
+    function ringArea(coords) {
+      let area = 0;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [x1, y1] = coords[i];
+        const [x2, y2] = coords[i + 1];
+        area += x1 * y2 - x2 * y1;
+      }
+      return area / 2;
+    }
+
+    if (geojson.type === "Point") {
+      const [lng, lat] = geojson.coordinates;
+      return `geography::Point(${lat}, ${lng}, ${srid})`;
+    }
+
+    if (geojson.type === "LineString") {
+      const coordinates = geojson.coordinates.map(([lng, lat]) => `${lng} ${lat}`).join(", ");
+      return `geography::STLineFromText('LINESTRING(${coordinates})', ${srid})`;
+    }
+
+    if (geojson.type === "Polygon") {
+      const correctedRings = geojson.coordinates.map((ring, index) => {
+        const area = ringArea(ring);
+        const shouldBeCCW = index === 0;
+        const isCCW = area > 0;
+        const correctedRing = shouldBeCCW === isCCW ? ring : [...ring].reverse();
+        return `(${correctedRing.map(([lng, lat]) => `${lng} ${lat}`).join(", ")})`;
+      });
+
+      const wkt = `POLYGON(${correctedRings.join(", ")})`;
+      return `geography::STPolyFromText('${wkt}', ${srid})`;
+    }
+
+    if (geojson.type === "MultiPolygon") {
+      const polygons = geojson.coordinates.map((poly) => {
+        const correctedRings = poly.map((ring, index) => {
+          const area = ringArea(ring);
+          const shouldBeCCW = index === 0;
+          const isCCW = area > 0;
+          const correctedRing = shouldBeCCW === isCCW ? ring : [...ring].reverse();
+          return `(${correctedRing.map(([lng, lat]) => `${lng} ${lat}`).join(", ")})`;
+        });
+        return `(${correctedRings.join(", ")})`;
+      });
+
+      const wkt = `MULTIPOLYGON(${polygons.join(", ")})`;
+      return `geography::STGeomFromText('${wkt}', ${srid})`; // ✅ Fixed here
+    }
+
+    // fallback
+    return `geography::STGeomFromText('${JSON.stringify(geojson)}', ${srid})`;
   }
+
   // Add endpoint to get uploaded layers
   router.get("/uploaded-layers", async (req, res) => {
     try {
       const result = await pool.request().query(`
         SELECT * FROM user_layers ORDER BY created_at DESC
       `);
-      console.log(result.recordset);
+      // console.log(result.recordset);
       res.json(result.recordset);
     } catch (error) {
       console.error("Error fetching uploaded layers:", error);
       res.status(500).json({ error: error.message });
     }
   });
+
+  router.get("/uploaded-layer/:layerId", async (req, res) => {
+    try {
+      const { layerId } = req.params;
+
+      // 1. Verify layer exists
+      const layerExists = await pool.request().input("layerId", sql.NVarChar(255), layerId).query("SELECT 1 FROM user_layers WHERE table_name = @layerId");
+
+      if (layerExists.recordset.length === 0) {
+        return res.status(404).json({ error: "Layer not found" });
+      }
+
+      // 2. Get all columns except system columns (id, geom)
+      const columnsResult = await pool.request().input("tableName", sql.NVarChar(255), layerId).query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name = @tableName
+          AND column_name NOT IN ('id', 'geom')
+          ORDER BY ordinal_position
+        `);
+
+      // 3. Build dynamic SELECT query
+      const selectColumns = ["id", "geom.STAsText() AS wkt", ...columnsResult.recordset.map((col) => `[${col.column_name}]`)].join(", ");
+
+      // 4. Execute query
+      const dataResult = await pool.request().query(`SELECT ${selectColumns} FROM [${layerId}]`);
+
+      // 5. Convert to GeoJSON
+      const features = dataResult.recordset.map((row) => {
+        const properties = {};
+
+        // Add all attribute columns to properties
+        columnsResult.recordset.forEach((col) => {
+          properties[col.column_name] = row[col.column_name];
+        });
+
+        return {
+          type: "Feature",
+          geometry: parseWKT(row.wkt),
+          properties: properties,
+          id: row.id,
+        };
+      });
+
+      res.json({
+        type: "FeatureCollection",
+        features: features,
+      });
+    } catch (error) {
+      console.error(`Error fetching uploaded layer ${req.params.layerId}:`, error);
+      res.status(500).json({
+        error: error.message,
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
+    }
+  });
+
+  // Keep the same parseWKT helper function from previous examples
 
   return router;
 };

@@ -45,11 +45,11 @@ function Drawer() {
       });
 
     // Include uploaded layers that are visible
-    const uploadedVisible = uploadedLayers
-      .filter(layer => visibleLayers[layer.id])
-      .map(layer => ({ id: layer.id, label: layer.label }));
+    // const uploadedVisible = uploadedLayers
+    //   .filter(layer => visibleLayers[layer.id])
+    //   .map(layer => ({ id: layer.id, label: layer.label }));
 
-    return [...baseLayers, ...uploadedVisible];
+    return [...baseLayers];
   }, [visibleLayers, VECTOR_LAYERS, uploadedLayers]);
 
   const toggleSidebar = () => {
@@ -58,7 +58,7 @@ function Drawer() {
   };
 
   const handleLayerToggle = (layerId, isChecked) => {
-    console.log(layerId, isChecked)
+    // console.log(layerId, isChecked)
     setVisibleLayers((prev) => ({
       ...prev,
       [layerId]: isChecked,
@@ -174,7 +174,7 @@ function Drawer() {
           <ul className="visible-layers-list">
             {visibleLayersList.length > 0 ? (
               visibleLayersList.map((layer, index) => (
-                <li key={layer.id} className="visible-layer-item">
+                <li key={index} className="visible-layer-item">
                   <span>{layer.label}</span>
                   <div className="layer-controls">
                     <button 

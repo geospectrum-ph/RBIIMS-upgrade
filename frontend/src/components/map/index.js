@@ -62,6 +62,7 @@ export default function Map({ visibleLayers }) {
     }
   }
 
+  // function for popup content (from geoserver)
   function formatProperties(props) {
     if (!props) return "No properties";
 
@@ -70,7 +71,20 @@ export default function Map({ visibleLayers }) {
       .join("<br/>");
   }
 
-  // Database page
+  // function for popup content (Uplaoded layers)
+  function formatPopupContent(layerId, feature) {
+    const properties = feature.properties;
+    let content = `<h3>${layerId}</h3><table>`;
+    // Add geometry type
+    content += `<tr><td><strong>Geometry</strong></td><td>${feature.geometry.type}</td></tr>`;
+    // Add all properties
+    for (const [key, value] of Object.entries(properties)) {
+      content += `<tr><td><strong>${key}</strong></td><td>${value !== null ? value : "NULL"}</td></tr>`;
+    }
+    return content + `</table>`;
+  }
+
+  // Database page map initialization
   useEffect(() => {
     if (map.current) return;
 
@@ -85,6 +99,18 @@ export default function Map({ visibleLayers }) {
     setMapInstance(mapInstance);
 
     map.current.on("load", () => {
+      // Map controls
+      map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+      map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
+      map.current.addControl(
+        new maplibregl.GeolocateControl({
+          positionOptions: { enableHighAccuracy: true },
+          trackUserLocation: true,
+        }),
+        "top-right"
+      );
+      map.current.addControl(new maplibregl.ScaleControl({ maxWidth: 80, unit: "metric" }), "bottom-left");
+
       VECTOR_LAYERS.forEach((layerConfig) => {
         if (!layerConfig.existsInStyle && map.current.getSource(layerConfig.source)) {
           map.current.addLayer({
@@ -131,52 +157,160 @@ export default function Map({ visibleLayers }) {
     };
   }, [lng, lat, zoom]);
 
+  // Render uploaded layers to Map
   useEffect(() => {
-  if (!map.current) return;
+  if (!map.current || !uploadedLayers.length) return;
 
-  // Add sources and layers for uploaded data
-  uploadedLayers.forEach(layer => {
-    const sourceId = layer.source;
-    const layerId = layer.id;
+  let loadingCount = uploadedLayers.length;
+  setIsMapLoading(true);
 
-    if (!map.current.getSource(sourceId)) {
-      map.current.addSource(sourceId, {
-        type: 'geojson',
-        data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=${layerId}`
-      });
+  const checkFinishLoading = () => {
+    loadingCount -= 1;
+    if (loadingCount <= 0) {
+      setIsMapLoading(false);
+    }
+  };
 
-      map.current.addLayer({
-        id: layerId,
-        type: layer.type,
-        source: sourceId,
-        paint: layer.paint,
-        layout: {
-          visibility: visibleLayers[layerId] ? 'visible' : 'none'
+    const fetchAndAddLayer = async (layer) => {
+      const sourceId = layer.source;
+      const layerId = layer.id;
+
+      try {
+        // Wait for style to load if needed
+        if (!map.current.isStyleLoaded()) {
+          await new Promise((resolve) => map.current.once("styledata", resolve));
+        }
+
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/uploaded-layer/${layerId}`);
+        const geojsonData = await response.json();
+
+        if (!geojsonData.features || !geojsonData.features.length) {
+          console.warn(`No features found in layer ${layerId}`);
+          return;
+        }
+
+        // Determine layer type from first feature's geometry
+        const firstFeature = geojsonData.features[0];
+        let layerType;
+        let paintConfig = {};
+
+        switch (firstFeature.geometry.type) {
+          case "Point":
+          case "MultiPoint":
+            layerType = "circle";
+            paintConfig = {
+              "circle-radius": 6,
+              "circle-color": "#068881ff",
+              "circle-stroke-width": 1,
+              "circle-stroke-color": "#fff",
+            };
+            break;
+          case "LineString":
+          case "MultiLineString":
+            layerType = "line";
+            paintConfig = {
+              "line-color": "#FF5722",
+              "line-width": 2,
+            };
+            break;
+          case "Polygon":
+          case "MultiPolygon":
+            layerType = "fill";
+            paintConfig = {
+              "fill-color": "#888888",
+              "fill-opacity": 0.7,
+              "fill-outline-color": "#000",
+            };
+            break;
+          default:
+            layerType = "circle";
+            paintConfig = {
+              "circle-radius": 3,
+              "circle-color": "#0981b1ff",
+            };
+        }
+
+        // Remove existing layer if present
+        if (map.current.getLayer(layerId)) {
+          map.current.removeLayer(layerId);
+        }
+        if (map.current.getSource(sourceId)) {
+          map.current.removeSource(sourceId);
+        }
+
+        // Add new source and layer
+        map.current.addSource(sourceId, {
+          type: "geojson",
+          data: geojsonData,
+        });
+
+        map.current.addLayer({
+          id: layerId,
+          type: layerType,
+          source: sourceId,
+          paint: paintConfig,
+          layout: {
+            visibility: visibleLayers[layerId] ? "visible" : "none",
+          },
+        });
+
+         // Wait until the source reports it’s fully loaded
+      const onSourceData = (e) => {
+        if (
+          e.sourceId === sourceId &&
+          e.isSourceLoaded &&
+          map.current.getSource(sourceId)?.loaded?.()
+        ) {
+          map.current.off("sourcedata", onSourceData);
+          checkFinishLoading();
+        }
+      };
+
+      map.current.on("sourcedata", onSourceData);
+      
+        // Add interactivity
+        map.current.on("click", layerId, (e) => {
+          const feature = e.features[0];
+          if (!feature) return;
+
+          new maplibregl.Popup().setLngLat(e.lngLat).setHTML(formatPopupContent(layerId, feature)).addTo(map.current);
+        });
+
+        map.current.on("mouseenter", layerId, () => {
+          map.current.getCanvas().style.cursor = "pointer";
+        });
+
+        map.current.on("mouseleave", layerId, () => {
+          map.current.getCanvas().style.cursor = "";
+        });
+      } catch (error) {
+        console.error(`Error loading layer ${layerId}:`, error);
+      }
+    };
+
+    // Process each uploaded layer
+    uploadedLayers.forEach(fetchAndAddLayer);
+
+    // Cleanup function
+    return () => {
+      uploadedLayers.forEach((layer) => {
+        if (map.current) {
+          if (map.current.getLayer(layer.id)) {
+            map.current.removeLayer(layer.id);
+          }
+          if (map.current.getSource(layer.source)) {
+            map.current.removeSource(layer.source);
+          }
+          // Remove event listeners
+          map.current.off("click", layer.id);
+          map.current.off("mouseenter", layer.id);
+          map.current.off("mouseleave", layer.id);
         }
       });
-    } else {
-      map.current.setLayoutProperty(
-        layerId,
-        'visibility',
-        visibleLayers[layerId] ? 'visible' : 'none'
-      );
-    }
-  });
+    };
+  }, [uploadedLayers, visibleLayers]);
 
-  // Cleanup function
-  return () => {
-    uploadedLayers.forEach(layer => {
-      if (map.current && map.current.getLayer(layer.id)) {
-        map.current.removeLayer(layer.id);
-      }
-      if (map.current && map.current.getSource(layer.source)) {
-        map.current.removeSource(layer.source);
-      }
-    });
-  };
-}, [uploadedLayers, visibleLayers]);
-
-  // In your Map.js component
+  //  uploaded layers
   useEffect(() => {
     if (!map.current) return;
 
@@ -225,6 +359,7 @@ export default function Map({ visibleLayers }) {
       });
     };
   }, [uploadedLayers]);
+
   // Forest Cover Loss
   useEffect(() => {
     if (!map.current) return;
