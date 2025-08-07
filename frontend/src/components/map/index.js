@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MaplibreLegendControl } from "@watergis/maplibre-gl-legend";
@@ -7,14 +7,15 @@ import "./index.css";
 import { MapContext } from "../../context/MapContext";
 import { LayoutContext } from "../../context/LayoutContext";
 import LoadingIndicator from "../../services/LoadingIndicator";
+import UploadModal from "../upload";
+import EditModal from "../edit";
 
 export default function Map({ visibleLayers }) {
   const [riverBasin, setRiverBasin] = React.useState([]);
   const [roadNetworks, setRoadNetworks] = React.useState([]);
   const [forestCover, setForestCover] = React.useState([]);
   const [isMapLoading, setIsMapLoading] = React.useState(false);
-
-  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance, uploadedLayers } = React.useContext(MapContext);
+  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance, uploadedLayers, showModal, setShowModal, showModalEdit, setShowModalEdit } = React.useContext(MapContext);
   const { page } = React.useContext(LayoutContext);
 
   const mapContainer = useRef(null);
@@ -23,6 +24,47 @@ export default function Map({ visibleLayers }) {
   const lat = 12.6042;
   const zoom = 5.5;
   // const API_KEY = 'YOUR_MAPTILER_API_KEY_HERE';
+
+  // Upload shapefile tooltip
+  class UploadControl {
+    constructor(onClick) {
+      this.onClick = onClick;
+    }
+
+    onAdd(map) {
+      this._map = map;
+      this._container = document.createElement("div");
+      this._container.className = "maplibregl-ctrl maplibregl-ctrl-group";
+      this._container.innerHTML = `<button title="Upload Shapefile" style="font-size: 18px;">📁</button>`;
+      this._container.onclick = this.onClick;
+      return this._container;
+    }
+
+    onRemove() {
+      this._container.remove();
+      this._map = undefined;
+    }
+  }
+  // Edit DB tooltip
+  class EditControl {
+    constructor(onClick) {
+      this.onClick = onClick;
+    }
+
+    onAdd(map) {
+      this._map = map;
+      this._container = document.createElement("div");
+      this._container.className = "maplibregl-ctrl maplibregl-ctrl-group";
+      this._container.innerHTML = `<button title="Edit Data" style="font-size: 18px;">✎</button>`;
+      this._container.onclick = this.onClick;
+      return this._container;
+    }
+
+    onRemove() {
+      this._container.remove();
+      this._map = undefined;
+    }
+  }
 
   async function getRoadNetworks() {
     const url = "http://localhost:1433/layer/getRoadNetworks";
@@ -110,6 +152,8 @@ export default function Map({ visibleLayers }) {
         "top-right"
       );
       map.current.addControl(new maplibregl.ScaleControl({ maxWidth: 80, unit: "metric" }), "bottom-left");
+      map.current.addControl(new UploadControl(() => setShowModal(true)), "top-right");
+      map.current.addControl(new EditControl(() => setShowModalEdit(true)), "top-right");
 
       VECTOR_LAYERS.forEach((layerConfig) => {
         if (!layerConfig.existsInStyle && map.current.getSource(layerConfig.source)) {
@@ -159,17 +203,17 @@ export default function Map({ visibleLayers }) {
 
   // Render uploaded layers to Map
   useEffect(() => {
-  if (!map.current || !uploadedLayers.length) return;
+    if (!map.current || !uploadedLayers.length) return;
 
-  let loadingCount = uploadedLayers.length;
-  setIsMapLoading(true);
+    let loadingCount = uploadedLayers.length;
+    setIsMapLoading(true);
 
-  const checkFinishLoading = () => {
-    loadingCount -= 1;
-    if (loadingCount <= 0) {
-      setIsMapLoading(false);
-    }
-  };
+    const checkFinishLoading = () => {
+      loadingCount -= 1;
+      if (loadingCount <= 0) {
+        setIsMapLoading(false);
+      }
+    };
 
     const fetchAndAddLayer = async (layer) => {
       const sourceId = layer.source;
@@ -254,20 +298,16 @@ export default function Map({ visibleLayers }) {
           },
         });
 
-         // Wait until the source reports it’s fully loaded
-      const onSourceData = (e) => {
-        if (
-          e.sourceId === sourceId &&
-          e.isSourceLoaded &&
-          map.current.getSource(sourceId)?.loaded?.()
-        ) {
-          map.current.off("sourcedata", onSourceData);
-          checkFinishLoading();
-        }
-      };
+        // Wait until the source reports it’s fully loaded
+        const onSourceData = (e) => {
+          if (e.sourceId === sourceId && e.isSourceLoaded && map.current.getSource(sourceId)?.loaded?.()) {
+            map.current.off("sourcedata", onSourceData);
+            checkFinishLoading();
+          }
+        };
 
-      map.current.on("sourcedata", onSourceData);
-      
+        map.current.on("sourcedata", onSourceData);
+
         // Add interactivity
         map.current.on("click", layerId, (e) => {
           const feature = e.features[0];
@@ -651,9 +691,13 @@ export default function Map({ visibleLayers }) {
   }, [populationData]);
 
   return (
-    <div className="map-wrap">
-      {isMapLoading && <LoadingIndicator />}
-      <div ref={mapContainer} className="map" />
-    </div>
+    <>
+      <div className="map-wrap">
+        {isMapLoading && <LoadingIndicator />}
+        <div ref={mapContainer} className="map" />
+      </div>
+      {showModal && <UploadModal />}
+      {showModalEdit && <EditModal />}
+    </>
   );
 }

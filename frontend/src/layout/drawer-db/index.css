@@ -62,7 +62,7 @@
 
 .sidebar:not(.open) .toggle-icon {
   position: absolute;
-  left: -60%;
+  left: -45%;
   transform: translateX(-50%);
 }
 
@@ -192,8 +192,16 @@ details[open] .nested-subgroup-content {
   margin-top: 20px;
   padding-top: 10px;
   border-top: 1px solid #ddd;
+  padding-left: 10px;
+  padding: 10px;
+  /* background-color: #ffffff; */
+  min-height: 200px;
 }
+.visible-layers-section h3 {
+  padding-left: 5px;
+  margin-bottom: 0px;
 
+}
 .visible-layers-list {
   list-style: none;
   padding: 0;
@@ -237,3 +245,6 @@ details[open] .nested-subgroup-content {
   padding: 8px 0;
 }
 
+.uploaded-layers-section h4{
+  padding-left: 15px;
+}

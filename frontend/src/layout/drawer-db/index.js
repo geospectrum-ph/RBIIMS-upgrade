@@ -134,7 +134,7 @@ function Drawer() {
 
     return (
       <div className="uploaded-layers-section">
-        <h3>Uploaded Data</h3>
+        <h4>Uploaded Data</h4>
         {Object.entries(groupedUploadedLayers).map(([groupName, layers]) => (
           <div key={`uploaded-${groupName}`} className="group-container">
             <details>

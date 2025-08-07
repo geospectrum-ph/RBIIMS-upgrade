@@ -1,0 +1,86 @@
+.bottom-sidebar-edit {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: 30vh;
+  background-color: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+  overflow: auto;
+}
+
+.edit-drawer {
+  display: flex;
+  height: 100%;
+}
+
+.edit-sidebar {
+  width: 200px;
+  border-right: 1px solid #ddd;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.edit-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.edit-sidebar li {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.edit-sidebar li:hover {
+  background-color: #f0f0f0;
+}
+
+.edit-content {
+  flex: 1;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-table-wrapper {
+  overflow: auto;
+  max-height: 30vh;
+  margin-top: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: left;
+}
+
+.edit-table-wrapper input {
+  width: 100%;
+}
+
+.close-btn {
+  background-color: #ccc;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  background-color: #aaa;
+}
+

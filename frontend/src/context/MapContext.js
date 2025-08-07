@@ -14,6 +14,7 @@ export const MapContext = React.createContext({
 function MapContextProvider(props) {
   const [mapInstance, setMapInstance] = React.useState(null);
   const [uploadedLayers, setUploadedLayers] = React.useState([]);
+  
   const url_dem = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_30meters_DEM_Philippines_clipped&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_twi = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_TWI&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_slope = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_Slope&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
@@ -21,10 +22,12 @@ function MapContextProvider(props) {
 
   const [forestCoverData, setForestCoverData] = React.useState({});
   const [populationData, setPopulationData] = React.useState({});
+  const [showModal, setShowModal] = React.useState(false); // Upload modal
+  const [showModalEdit, setShowModalEdit] = React.useState(false); // Edit modal
 
   const fetchForestData = async (region, year) => {
     try {
-      const url = `http://localhost:1433/layer/getPointsHeat?regn=${region}&year=${year}`;
+      const url = `${process.env.REACT_APP_BACKEND_DOMAIN}/layer/getPointsHeat?regn=${region}&year=${year}`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -44,7 +47,7 @@ function MapContextProvider(props) {
 
   const fetchPopulationData = async (dataType, region) => {
     try {
-      const url = `http://localhost:1433/layer/getPopulationData?type=${dataType}&region=${encodeURIComponent(region)}`;
+      const url = `${process.env.REACT_APP_BACKEND_DOMAIN}/layer/getPopulationData?type=${dataType}&region=${encodeURIComponent(region)}`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -75,7 +78,7 @@ function MapContextProvider(props) {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      timeout: 300000,
+        timeout: 300000,
       });
 
       const newLayer = {
@@ -2656,7 +2659,7 @@ function MapContextProvider(props) {
     return initialState;
   });
 
-  return <MapContext.Provider value={{ uploadShapefile, fetchUploadedLayers, uploadedLayers, setUploadedLayers, url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
+  return <MapContext.Provider value={{ showModalEdit, setShowModalEdit, showModal, setShowModal, uploadShapefile, fetchUploadedLayers, uploadedLayers, setUploadedLayers, url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
 }
 
 export default MapContextProvider;
