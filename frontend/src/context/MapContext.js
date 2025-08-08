@@ -22,8 +22,44 @@ function MapContextProvider(props) {
 
   const [forestCoverData, setForestCoverData] = React.useState({});
   const [populationData, setPopulationData] = React.useState({});
+  const emptyFeatureCollection = { type: "FeatureCollection", features: [] };
+  const [datasets, setDatasets] = React.useState({
+    surficial_sediment: emptyFeatureCollection,
+    aquaculture: emptyFeatureCollection,
+    mangrove: emptyFeatureCollection,
+  });
+
   const [showModal, setShowModal] = React.useState(false); // Upload modal
   const [showModalEdit, setShowModalEdit] = React.useState(false); // Edit modal
+
+  const DATASET_TABLES = {
+    surficial_sediment: "SurficialSedimentSurvey",
+    aquaculture: "AquacultureResources",
+    mangrove: "MangroveResources",
+    // Add more mappings
+  };
+
+  const fetchDatasets = async (layerId) => {
+    try {
+      const tableName = DATASET_TABLES[layerId];
+      if (!tableName) {
+        console.warn(`No table mapping found for layer: ${layerId}`);
+        return Promise.reject("No table mapping");
+      }
+
+      const url = `${process.env.REACT_APP_BACKEND_DOMAIN}/datasets/getData/${tableName}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+
+      return response.json(); // Return the promise directly
+    } catch (error) {
+      console.error(`Error fetching dataset for ${layerId}:`, error);
+      return Promise.reject(error);
+    }
+  };
 
   const fetchForestData = async (region, year) => {
     try {
@@ -164,133 +200,6 @@ function MapContextProvider(props) {
       mapInstance.moveLayer(layerId);
     }
   };
-
-  const ANA_GROUPS = [
-    {
-      title: "Analytics",
-      layers: [
-        // These will be the main region layers
-      ],
-      subGroups: [
-        {
-          title: "Heat Map (Forest Loss)",
-          layers: [],
-          subGroups: [
-            {
-              title: "BARMM",
-              value: "BARMM",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "CAR",
-              value: "CAR",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "NCR",
-              value: "NCR",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Negros Island Region",
-              value: "NIR",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 1 (Ilocos Region)",
-              value: "R1",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 2 (Cagayan Valley)",
-              value: "R2",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 3 (Central Luzon))",
-              value: "R3",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 4-A (CALABARZON)",
-              value: "R4A",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 4-B (MIMAROPA)",
-              value: "MIMAROPA",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 5 (Bicol Region)",
-              value: "R5",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 6 (Western Bisayas)",
-              value: "R6",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 7 (Central Visayas)",
-              value: "R7",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 8 (Eastern Visayas)",
-              value: "R8",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 9 (Zamboanga Peninsula)",
-              value: "R9",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 10 (Northern Mindanao)",
-              value: "R10",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 11 (Davao Region)",
-              value: "R11",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 12 (SOCCSKSARGEN)",
-              value: "R12",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-            {
-              title: "Region 13 (CARAGA)",
-              value: "R13",
-              layers: ["2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022"],
-            },
-          ],
-        },
-        {
-          title: "Choropleth Map",
-          layers: [],
-          subGroups: [
-            {
-              title: "Population (May 2020)",
-              value: "POP_MAY202",
-              layers: ["REGION I (ILOCOS REGION)", "REGION II (CAGAYAN VALLEY)", "REGION III (CENTRAL LUZON)", "REGION IV-A (CALABARZON)", "REGION IV-B (MIMAROPA)", "REGION V (BICOL REGION)", "REGION VI (WESTERN VISAYAS)", "REGION VII (CENTRAL VISAYAS)", "REGION VIII (EASTERN VISAYAS)", "REGION IX (ZAMBOANGA PENINSULA)", "REGION X (NORTHERN MINDANAO)", "REGION XI (DAVAO REGION)", "REGION XII (SOCCSKSARGEN)", "NATIONAL CAPITAL REGION (NCR)", "CORDILLERA ADMINISTRATIVE REGION (CAR)", "AUTONOMOUS REGION IN MUSLIM MINDANAO (ARMM)", "REGION XIII (Caraga)", "Negros Island Region"],
-            },
-            {
-              title: "Population Density",
-              value: "PopDensity",
-              layers: ["REGION I (ILOCOS REGION)", "REGION II (CAGAYAN VALLEY)", "REGION III (CENTRAL LUZON)", "REGION IV-A (CALABARZON)", "REGION IV-B (MIMAROPA)", "REGION V (BICOL REGION)", "REGION VI (WESTERN VISAYAS)", "REGION VII (CENTRAL VISAYAS)", "REGION VIII (EASTERN VISAYAS)", "REGION IX (ZAMBOANGA PENINSULA)", "REGION X (NORTHERN MINDANAO)", "REGION XI (DAVAO REGION)", "REGION XII (SOCCSKSARGEN)", "NATIONAL CAPITAL REGION (NCR)", "CORDILLERA ADMINISTRATIVE REGION (CAR)", "AUTONOMOUS REGION IN MUSLIM MINDANAO (ARMM)", "REGION XIII (Caraga)", "Negros Island Region"],
-            },
-          ],
-        },
-        {
-          title: "Topograhic Derivatives",
-          layers: ["Topographic Wetness Index", "Slope", "Hillshade"],
-        },
-      ],
-    },
-  ];
 
   const LAYER_GROUPS = [
     {
@@ -515,7 +424,7 @@ function MapContextProvider(props) {
     },
     {
       title: "Aquatic and Marine Monitoring",
-      layers: [{ id: "", label: "Surficial Sediment Survey" }],
+      layers: [{ id: "surficial_sediment", label: "Surficial Sediment Survey" }],
     },
     {
       title: "Demographics",
@@ -1861,6 +1770,17 @@ function MapContextProvider(props) {
         "fill-outline-color": "#000000",
       },
     },
+    // Aquatic and Marine Monitoring
+    {
+      id: "surficial_sediment",
+      mapLayerId: "surficial_sediment-layer",
+      type: "circle",
+      source: "surficial_sedimentSource", // Note the consistent naming
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#FF0000",
+      },
+    },
     {
       id: "watershed-reserve",
       mapLayerId: "watershed-reserve-layer",
@@ -2565,6 +2485,11 @@ function MapContextProvider(props) {
         type: "geojson",
         data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/UmirayStream`,
       },
+      //Aquatic and Marine Monitoring
+      surficialsediment: {
+        type: "geojson",
+        data: datasets.surficial_sediment,
+      },
 
       // forest losssources...
       forestcoverlos: {
@@ -2658,7 +2583,7 @@ function MapContextProvider(props) {
     return initialState;
   });
 
-  return <MapContext.Provider value={{ showModalEdit, setShowModalEdit, showModal, setShowModal, uploadShapefile, fetchUploadedLayers, uploadedLayers, setUploadedLayers, url_dem, ANA_GROUPS, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
+  return <MapContext.Provider value={{ setDatasets, datasets, DATASET_TABLES, fetchDatasets, showModalEdit, setShowModalEdit, showModal, setShowModal, uploadShapefile, fetchUploadedLayers, uploadedLayers, setUploadedLayers, url_dem, LAYER_GROUPS, VECTOR_LAYERS, MAP_STYLE, visibleLayers, setVisibleLayers, fetchForestData, forestCoverData, fetchPopulationData, populationData, moveLayerUp, moveLayerDown, setMapInstance }}>{props.children}</MapContext.Provider>;
 }
 
 export default MapContextProvider;

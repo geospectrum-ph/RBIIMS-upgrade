@@ -15,7 +15,7 @@ export default function Map({ visibleLayers }) {
   const [roadNetworks, setRoadNetworks] = React.useState([]);
   const [forestCover, setForestCover] = React.useState([]);
   const [isMapLoading, setIsMapLoading] = React.useState(false);
-  const { VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance, uploadedLayers, showModal, setShowModal, showModalEdit, setShowModalEdit } = React.useContext(MapContext);
+  const { setDatasets, fetchDatasets, datasets, DATASET_TABLES, VECTOR_LAYERS, MAP_STYLE, forestCoverData, populationData, setMapInstance, uploadedLayers, showModal, setShowModal, showModalEdit, setShowModalEdit } = React.useContext(MapContext);
   const { page } = React.useContext(LayoutContext);
 
   const mapContainer = useRef(null);
@@ -167,7 +167,7 @@ export default function Map({ visibleLayers }) {
             paint: layerConfig.paint,
           });
         }
-
+        console.log(layerConfig);
         // Add click event to display popup if layer type is fill or line
         if (layerConfig.type === "fill" || layerConfig.type === "line") {
           map.current.on("click", layerConfig.mapLayerId, (e) => {
@@ -491,46 +491,99 @@ export default function Map({ visibleLayers }) {
     map.current.on("idle", () => {
       setIsMapLoading(false); // All tiles are loaded
     });
-    // Handle standard vector layers
-    VECTOR_LAYERS.forEach(({ id, mapLayerId }) => {
-      if (map.current.getLayer(mapLayerId)) {
-        map.current.setLayoutProperty(mapLayerId, "visibility", visibleLayers[id] ? "visible" : "none");
+
+    const updateLayers = async () => {
+      // First handle all visibility updates (immediate)
+      // This ensures UI responsiveness while data may be loading
+
+      // Handle standard vector layers visibility
+      VECTOR_LAYERS.forEach(({ id, mapLayerId }) => {
+        if (map.current.getLayer(mapLayerId)) {
+          map.current.setLayoutProperty(mapLayerId, "visibility", visibleLayers[id] ? "visible" : "none");
+        }
+      });
+
+      // Handle raster layers (TWI, Slope, Hillshade etxx)
+      if (map.current.getLayer("twi-layer")) {
+        map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["twi"] ? "visible" : "none");
       }
-    });
+      if (map.current.getLayer("slope-layer")) {
+        map.current.setLayoutProperty("slope-layer", "visibility", visibleLayers["slope"] ? "visible" : "none");
+      }
+      if (map.current.getLayer("hillshade-layer")) {
+        map.current.setLayoutProperty("hillshade-layer", "visibility", visibleLayers["hillshade"] ? "visible" : "none");
+      }
 
-    // Handle TWI, Slope, Hillshade
-    if (map.current.getLayer("twi-layer")) {
-      map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["twi"] ? "visible" : "none");
-    }
-    if (map.current.getLayer("slope-layer")) {
-      map.current.setLayoutProperty("slope-layer", "visibility", visibleLayers["slope"] ? "visible" : "none");
-    }
-    if (map.current.getLayer("hillshade-layer")) {
-      map.current.setLayoutProperty("hillshade-layer", "visibility", visibleLayers["hillshade"] ? "visible" : "none");
-    }
+      // Handle special layers (population and forest loss)
+      Object.entries(visibleLayers).forEach(([layerId, isVisible]) => {
+        if (layerId.startsWith("POP_MAY202-") || layerId.startsWith("PopDensity-")) {
+          const [dataType, region] = layerId.split("-");
+          const layerIdToShow = `population-layer-${dataType}-${region}`;
 
-    // Handle population and forest loss layers
-    Object.entries(visibleLayers).forEach(([layerId, isVisible]) => {
-      if (layerId.startsWith("POP_MAY202-") || layerId.startsWith("PopDensity-")) {
-        const [dataType, region] = layerId.split("-");
-        const layerIdToShow = `population-layer-${dataType}-${region}`;
+          if (map.current.getLayer(layerIdToShow)) {
+            map.current.setLayoutProperty(layerIdToShow, "visibility", isVisible ? "visible" : "none");
+          }
+        }
 
-        if (map.current.getLayer(layerIdToShow)) {
-          map.current.setLayoutProperty(layerIdToShow, "visibility", isVisible ? "visible" : "none");
+        if (layerId.includes("-") && layerId.split("-")[1].match(/^\d{4}$/)) {
+          const [region, year] = layerId.split("-");
+          const baseLayerId = `forest-loss-layer-${region}-${year}`;
+
+          if (map.current.getLayer(baseLayerId)) {
+            map.current.setLayoutProperty(baseLayerId, "visibility", isVisible ? "visible" : "none");
+            map.current.setLayoutProperty(`${baseLayerId}-points`, "visibility", isVisible ? "visible" : "none");
+          }
+        }
+      });
+
+      // Now handle data loading ONLY for dataset table layers
+      for (const { id, mapLayerId } of VECTOR_LAYERS) {
+        // Only proceed if:
+        // 1. This is a dataset table layer (exists in DATASET_TABLES)
+        // 2. The layer is set to visible
+        // 3. We don't already have the data
+        if (DATASET_TABLES[id] && visibleLayers[id] && (!datasets[id] || datasets[id].features.length === 0)) {
+          try {
+            const data = await fetchDatasets(id);
+            const sourceId = `${id}Source`;
+
+            // Update state
+            setDatasets((prev) => ({
+              ...prev,
+              [id]: data,
+            }));
+
+            // Add or update source
+            if (map.current.getSource(sourceId)) {
+              map.current.getSource(sourceId).setData(data);
+            } else {
+              map.current.addSource(sourceId, {
+                type: "geojson",
+                data: data,
+              });
+            }
+
+            // Add layer if it doesn't exist
+            if (!map.current.getLayer(mapLayerId)) {
+              map.current.addLayer({
+                id: mapLayerId,
+                type: VECTOR_LAYERS.find((l) => l.id === id)?.type || "circle",
+                source: sourceId,
+                layout: {
+                  visibility: "visible",
+                },
+                paint: VECTOR_LAYERS.find((l) => l.id === id)?.paint || {},
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to load dataset table layer ${id}:`, error);
+          }
         }
       }
+    };
 
-      if (layerId.includes("-") && layerId.split("-")[1].match(/^\d{4}$/)) {
-        const [region, year] = layerId.split("-");
-        const baseLayerId = `forest-loss-layer-${region}-${year}`;
-
-        if (map.current.getLayer(baseLayerId)) {
-          map.current.setLayoutProperty(baseLayerId, "visibility", isVisible ? "visible" : "none");
-          map.current.setLayoutProperty(`${baseLayerId}-points`, "visibility", isVisible ? "visible" : "none");
-        }
-      }
-    });
-  }, [visibleLayers]);
+    updateLayers();
+  }, [visibleLayers, datasets]);
 
   // Population and hover effect
   useEffect(() => {
@@ -688,8 +741,40 @@ export default function Map({ visibleLayers }) {
     return () => {
       popup.remove();
     };
-  }, [populationData]);
+  }, [populationData, datasets]);
 
+  useEffect(() => {
+    if (!map.current) return;
+
+    // Update all dataset sources when datasets change
+    Object.entries(datasets).forEach(([layerId, data]) => {
+      const sourceId = `${layerId}Source`;
+
+      if (map.current.getSource(sourceId)) {
+        map.current.getSource(sourceId).setData(data);
+      } else if (data.features && data.features.length > 0) {
+        // Only add source if we have data
+        map.current.addSource(sourceId, {
+          type: "geojson",
+          data: data,
+        });
+
+        // Add layer if it doesn't exist
+        const layerConfig = VECTOR_LAYERS.find((l) => l.id === layerId);
+        if (layerConfig && !map.current.getLayer(layerConfig.mapLayerId)) {
+          map.current.addLayer({
+            id: layerConfig.mapLayerId,
+            type: layerConfig.type,
+            source: sourceId,
+            layout: {
+              visibility: "none",
+            },
+            paint: layerConfig.paint,
+          });
+        }
+      }
+    });
+  }, [datasets]);
   return (
     <>
       <div className="map-wrap">

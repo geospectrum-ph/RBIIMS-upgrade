@@ -159,6 +159,7 @@ function determineSqlType(value) {
 }
 
 module.exports = (pool) => {
+  //uplaod shapefile
   router.post("/shapefiles", async (req, res) => {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ success: false, error: "No files were uploaded." });
@@ -282,7 +283,7 @@ module.exports = (pool) => {
     }
   });
 
-  // Add endpoint to get uploaded layers
+  // Add endpoint to get uploaded layers for display
   router.get("/uploaded-layers", async (req, res) => {
     try {
       const result = await pool.request().query(`
@@ -296,6 +297,7 @@ module.exports = (pool) => {
     }
   });
 
+  // get certain table and respond a geojson format
   router.get("/uploaded-layer/:layerId", async (req, res) => {
     try {
       const { layerId } = req.params;
@@ -354,7 +356,7 @@ module.exports = (pool) => {
 
   // Fetch editable tables
   router.get("/editables/tables", async (req, res) => {
-    const staticTables = ["SurficialSedimentSurvey"]; // static tables (40 Datasets)
+    const staticTables = ["SurficialSedimentSurvey", "CTDMonitoringStation"]; // static tables (40 Datasets)
 
     try {
       const uploaded = await pool.request().query("SELECT table_name FROM user_layers");
@@ -433,6 +435,63 @@ module.exports = (pool) => {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  router.get("/getData/:tableName", async (req, res) => {
+    try {
+      const { tableName } = req.params;
+
+      // 1. Verify table exists
+      const tableCheck = await pool.request().input("tableName", sql.NVarChar(255), tableName).query(`
+        SELECT 1 
+        FROM information_schema.tables 
+        WHERE table_name = @tableName
+      `);
+
+      if (tableCheck.recordset.length === 0) {
+        return res.status(404).json({ error: "Table not found" });
+      }
+
+      // 2. Get attribute columns
+      const columnsResult = await pool.request().input("tableName", sql.NVarChar(255), tableName).query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = @tableName
+        AND column_name NOT IN ('id', 'geom')
+        ORDER BY ordinal_position
+      `);
+
+      const selectColumns = ["id", "geom.STAsText() AS wkt", ...columnsResult.recordset.map((col) => `[${col.column_name}]`)].join(", ");
+
+      // 3. Fetch data
+      const dataResult = await pool.request().query(`SELECT ${selectColumns} FROM [${tableName}]`);
+
+      // 4. Convert to GeoJSON
+      const features = dataResult.recordset.map((row) => {
+        const properties = {};
+        columnsResult.recordset.forEach((col) => {
+          properties[col.column_name] = row[col.column_name];
+        });
+
+        return {
+          type: "Feature",
+          geometry: parseWKT(row.wkt),
+          properties,
+          id: row.id,
+        };
+      });
+
+      res.json({
+        type: "FeatureCollection",
+        features,
+      });
+    } catch (error) {
+      console.error(`Error fetching dataset ${req.params.tableName}:`, error);
+      res.status(500).json({
+        error: error.message,
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
     }
   });
 

@@ -4,16 +4,7 @@ import { MapContext } from "../../context/MapContext";
 
 function Drawer() {
   const [isOpen, setIsOpen] = useState(true);
-  const { 
-    uploadedLayers, 
-    fetchUploadedLayers, 
-    visibleLayers, 
-    setVisibleLayers, 
-    LAYER_GROUPS, 
-    moveLayerUp, 
-    moveLayerDown, 
-    VECTOR_LAYERS 
-  } = React.useContext(MapContext);
+  const { uploadedLayers, fetchUploadedLayers, visibleLayers, setVisibleLayers, LAYER_GROUPS, moveLayerUp, moveLayerDown, VECTOR_LAYERS, fetchForestData, fetchPopulationData } = React.useContext(MapContext);
 
   // Fetch uploaded layers on component mount
   useEffect(() => {
@@ -57,8 +48,24 @@ function Drawer() {
     document.body.classList.toggle("sidebar-open", !isOpen);
   };
 
-  const handleLayerToggle = (layerId, isChecked) => {
-    // console.log(layerId, isChecked)
+  const handleLayerToggle = (layerIdRaw, isChecked, parentValue = null) => {
+    const layerId = parentValue ? `${parentValue}-${layerIdRaw}` : layerIdRaw;
+
+    // Handle forest data
+    if (layerIdRaw.match(/^\d{4}$/) && parentValue) {
+      fetchForestData(parentValue, layerIdRaw);
+    }
+
+    // Handle population data
+    else if (parentValue && (parentValue === "POP_MAY202" || parentValue === "PopDensity")) {
+      fetchPopulationData(parentValue, layerIdRaw);
+    }
+
+    // Handle population data
+    else if (parentValue && (parentValue === "POP_MAY202" || parentValue === "PopDensity")) {
+      fetchPopulationData(parentValue, layerIdRaw);
+    }
+    // Update visible layers
     setVisibleLayers((prev) => ({
       ...prev,
       [layerId]: isChecked,
@@ -71,12 +78,7 @@ function Drawer() {
 
     return (
       <li key={layerId}>
-        <input 
-          type="checkbox" 
-          id={layerId} 
-          checked={visibleLayers[layerId] || false} 
-          onChange={(e) => handleLayerToggle(layerId, e.target.checked)} 
-        />
+        <input type="checkbox" id={layerId} checked={visibleLayers[layerId] || false} onChange={(e) => handleLayerToggle(layerObj.id, e.target.checked, parentValue)} />
         <label htmlFor={layerId}>{layerObj.label}</label>
       </li>
     );
@@ -113,9 +115,7 @@ function Drawer() {
                       <li key={nestedSubGroup.title} className="nested-subgroup">
                         <details>
                           <summary className="nested-subgroup-title">{nestedSubGroup.title}</summary>
-                          <ul className="nested-subgroup-content">
-                            {nestedSubGroup.layers?.map((layer) => renderLayerItem(layer, nestedSubGroup.value))}
-                          </ul>
+                          <ul className="nested-subgroup-content">{nestedSubGroup.layers?.map((layer) => renderLayerItem(layer, nestedSubGroup.value))}</ul>
                         </details>
                       </li>
                     ))}
@@ -140,14 +140,9 @@ function Drawer() {
             <details>
               <summary className="group-title">{groupName} (Uploaded)</summary>
               <ul className="group-content">
-                {layers.map(layer => (
+                {layers.map((layer) => (
                   <li key={layer.id}>
-                    <input
-                      type="checkbox"
-                      id={layer.id}
-                      checked={visibleLayers[layer.id] || false}
-                      onChange={(e) => handleLayerToggle(layer.id, e.target.checked)}
-                    />
+                    <input type="checkbox" id={layer.id} checked={visibleLayers[layer.id] || false} onChange={(e) => handleLayerToggle(layer.id, e.target.checked)} />
                     <label htmlFor={layer.id}>{layer.label}</label>
                   </li>
                 ))}
@@ -159,57 +154,45 @@ function Drawer() {
     );
   };
 
-return (
-  <div className={`sidebar ${isOpen ? "open" : ""}`}>
-    <button className="toggle-btn" onClick={toggleSidebar}>
-      <span className="sidebar-title">Database & Analytics</span>
-      <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
-    </button>
+  return (
+    <div className={`sidebar ${isOpen ? "open" : ""}`}>
+      <button className="toggle-btn" onClick={toggleSidebar}>
+        <span className="sidebar-title">Database & Analytics</span>
+        <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
+      </button>
 
-    <div className="sidebar-scrollable">
-      {LAYER_GROUPS.map(renderGroup)}
-      {renderUploadedLayersSection()}
+      <div className="sidebar-scrollable">
+        {LAYER_GROUPS.map(renderGroup)}
+        {renderUploadedLayersSection()}
+      </div>
+
+      <div className="visible-layers-section">
+        <h3>Layers</h3>
+        <ul className="visible-layers-list">
+          {visibleLayersList.length > 0 ? (
+            visibleLayersList.map((layer, index) => (
+              <li key={index} className="visible-layer-item">
+                <span>{layer.label}</span>
+                <div className="layer-controls">
+                  <button onClick={() => moveLayerUp(layer.id)} disabled={index === 0} title="Move layer up">
+                    ↑
+                  </button>
+                  <button onClick={() => moveLayerDown(layer.id)} disabled={index === visibleLayersList.length - 1} title="Move layer down">
+                    ↓
+                  </button>
+                  <button onClick={() => handleLayerToggle(layer.id, false)} title="Hide layer">
+                    ×
+                  </button>
+                </div>
+              </li>
+            ))
+          ) : (
+            <li className="no-layers-message">No visible layers</li>
+          )}
+        </ul>
+      </div>
     </div>
-
-    <div className="visible-layers-section">
-      <h3>Layers</h3>
-      <ul className="visible-layers-list">
-        {visibleLayersList.length > 0 ? (
-          visibleLayersList.map((layer, index) => (
-            <li key={index} className="visible-layer-item">
-              <span>{layer.label}</span>
-              <div className="layer-controls">
-                <button 
-                  onClick={() => moveLayerUp(layer.id)} 
-                  // disabled={index === 0} 
-                  title="Move layer up"
-                >
-                  ↑
-                </button>
-                <button 
-                  onClick={() => moveLayerDown(layer.id)} 
-                  // disabled={index === visibleLayersList.length - 1} 
-                  title="Move layer down"
-                >
-                  ↓
-                </button>
-                <button 
-                  onClick={() => handleLayerToggle(layer.id, false)} 
-                  title="Hide layer"
-                >
-                  ×
-                </button>
-              </div>
-            </li>
-          ))
-        ) : (
-          <li className="no-layers-message">No visible layers</li>
-        )}
-      </ul>
-    </div>
-  </div>
-);
-
+  );
 }
 
 export default Drawer;
