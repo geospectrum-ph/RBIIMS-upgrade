@@ -25,7 +25,8 @@ function MapContextProvider(props) {
   const emptyFeatureCollection = { type: "FeatureCollection", features: [] };
   const [datasets, setDatasets] = React.useState({
     surficial_sediment: emptyFeatureCollection,
-    aquaculture: emptyFeatureCollection,
+    CTD_Monitoring: emptyFeatureCollection,
+    national_roads: emptyFeatureCollection,
     mangrove: emptyFeatureCollection,
   });
 
@@ -34,7 +35,8 @@ function MapContextProvider(props) {
 
   const DATASET_TABLES = {
     surficial_sediment: "SurficialSedimentSurvey",
-    aquaculture: "AquacultureResources",
+    CTD_Monitoring: "CTDMonitoringStation",
+    national_roads: "NationalRoads",
     mangrove: "MangroveResources",
     // Add more mappings
   };
@@ -232,6 +234,20 @@ function MapContextProvider(props) {
       title: "Water Resources and Hydrology",
       subGroups: [
         {
+          title: "Digital Elevation Model",
+          layers: [
+            { id: "srtm-dem", label: "Digital Elevation Model" },
+            { id: "hillshade", label: "Hillshade" },
+            { id: "twi", label: "Topographic Wetness Index" },
+            { id: "slope", label: "Slope" },
+            { id: "tpi", label: "Topographic Position Index" },
+            { id: "tc", label: "Topographic Contour" },
+            { id: "rough", label: "Roughness" },
+            { id: "aspect", label: "Aspect" },
+            { id: "relief", label: "Color Relief" },
+          ],
+        },
+        {
           title: "Major River Basin",
           layers: [
             { id: "abra-river", label: "Abra River Basin" },
@@ -389,15 +405,10 @@ function MapContextProvider(props) {
         },
       ],
       layers: [
-        { id: "srtm-dem", label: "Digital Elevation Model" },
-        { id: "hillshade", label: "Hillshade" },
-        { id: "twi", label: "Topographic Wetness Index" },
-        { id: "slope", label: "Slope" },
-        { id: "tpi", label: "Topographic Position Index" },
-        { id: "tc", label: "Topographic Contour" },
-        { id: "rough", label: "Roughness" },
-        { id: "aspect", label: "Aspect" },
-        { id: "relief", label: "Color Relief" },
+        { id: "bodies_of_water", label: "Bodies of Water" },
+        { id: "digital_bathymetry", label: "Digital Bathymetry" },
+        { id: "infiltration_rate", label: "Infiltration Rate" },
+        { id: "percolation_rate", label: "Percolation Rate" },
       ],
     },
     {
@@ -424,7 +435,13 @@ function MapContextProvider(props) {
     },
     {
       title: "Aquatic and Marine Monitoring",
-      layers: [{ id: "surficial_sediment", label: "Surficial Sediment Survey" }],
+      layers: [
+        { id: "surficial_sediment", label: "Surficial Sediment Survey" },
+        { id: "CTD_Monitoring", label: "CTD Monitoring Station" },
+        { id: "offshore_exploration", label: "Offshore Exploration" },
+        { id: "sediment_grain", label: "Sediment Grain Size Survey" },
+        { id: "sediment_station", label: "Sediment Station" },
+      ],
     },
     {
       title: "Demographics",
@@ -543,7 +560,7 @@ function MapContextProvider(props) {
     },
     {
       title: "Infrastructure and Facilities",
-      layers: [{ id: "national-roads", label: "National Roads" }],
+      layers: [{ id: "national_roads", label: "National Roads" }],
     },
     {
       title: "Agriculture and Forestry",
@@ -557,17 +574,7 @@ function MapContextProvider(props) {
   ];
 
   const VECTOR_LAYERS = [
-    // National Roads
-    {
-      id: "national-roads",
-      mapLayerId: "national-roads-layer",
-      type: "line",
-      source: "nationalRoads",
-      paint: {
-        "line-color": "#333333",
-        "line-width": 2,
-      },
-    },
+   
     // Soil Type
     {
       id: "soil-type",
@@ -1782,6 +1789,16 @@ function MapContextProvider(props) {
       },
     },
     {
+      id: "CTD_Monitoring",
+      mapLayerId: "CTD_Monitoring-layer",
+      type: "circle",
+      source: "CTD_MonitoringSource", // Note the consistent naming
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#51ffd3ff",
+      },
+    },
+    {
       id: "watershed-reserve",
       mapLayerId: "watershed-reserve-layer",
       type: "fill",
@@ -1790,6 +1807,17 @@ function MapContextProvider(props) {
         "fill-color": "#0788c4",
         "fill-opacity": 0.5,
         "fill-outline-color": "#000000",
+      },
+    },
+    // Infrastrructure
+    {
+      id: "national_roads",
+      mapLayerId: "national_roads-layer",
+      type: "line",
+      source: "national_roadsSource",
+      paint: {
+        "line-color": "#333333",
+        "line-width": 2,
       },
     },
     // Forest Loss
@@ -2485,12 +2513,6 @@ function MapContextProvider(props) {
         type: "geojson",
         data: `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver/UmirayStream`,
       },
-      //Aquatic and Marine Monitoring
-      surficialsediment: {
-        type: "geojson",
-        data: datasets.surficial_sediment,
-      },
-
       // forest losssources...
       forestcoverlos: {
         type: "geojson",

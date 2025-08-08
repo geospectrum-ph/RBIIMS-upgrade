@@ -84,18 +84,18 @@
   border-radius: 6px;
 }
 
-table {
+.edit-table-wrapper table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
 }
 
-th, td {
+.edit-table-wrapper th, .edit-table-wrapper td {
   border: 1px solid #ddd;
   padding: 8px;
 }
 
-th {
+.edit-table-wrapper th {
   background-color: #f7f7f7;
   font-weight: 600;
 }

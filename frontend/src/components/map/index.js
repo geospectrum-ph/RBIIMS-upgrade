@@ -477,7 +477,7 @@ export default function Map({ visibleLayers }) {
     });
   }, [populationData]);
 
-  // handles visibleLayers changes RASTER:
+  // handles visibleLayers changes RASTER and the datasets fetch from the database
   useEffect(() => {
     if (!map.current) return;
 
@@ -489,21 +489,46 @@ export default function Map({ visibleLayers }) {
     });
 
     map.current.on("idle", () => {
-      setIsMapLoading(false); // All tiles are loaded
+      setIsMapLoading(false);
     });
 
-    const updateLayers = async () => {
-      // First handle all visibility updates (immediate)
-      // This ensures UI responsiveness while data may be loading
+    // Function to add interactivity to a layer
+    const addInteractivity = (layerId) => {
+      // Remove existing event listeners to avoid duplicates
+      map.current.off("click", layerId);
+      map.current.off("mouseenter", layerId);
+      map.current.off("mouseleave", layerId);
 
-      // Handle standard vector layers visibility
+      // Add new interactivity
+      map.current.on("click", layerId, (e) => {
+        const feature = e.features[0];
+        if (!feature) return;
+
+        new maplibregl.Popup().setLngLat(e.lngLat).setHTML(formatPopupContent(layerId, feature)).addTo(map.current);
+      });
+
+      map.current.on("mouseenter", layerId, () => {
+        map.current.getCanvas().style.cursor = "pointer";
+      });
+
+      map.current.on("mouseleave", layerId, () => {
+        map.current.getCanvas().style.cursor = "";
+      });
+    };
+
+    const updateLayers = async () => {
+      // First handle all visibility updates
       VECTOR_LAYERS.forEach(({ id, mapLayerId }) => {
         if (map.current.getLayer(mapLayerId)) {
           map.current.setLayoutProperty(mapLayerId, "visibility", visibleLayers[id] ? "visible" : "none");
+          // Add interactivity when layer is visible
+          if (visibleLayers[id]) {
+            addInteractivity(mapLayerId);
+          }
         }
       });
 
-      // Handle raster layers (TWI, Slope, Hillshade etxx)
+      // Handle raster layers
       if (map.current.getLayer("twi-layer")) {
         map.current.setLayoutProperty("twi-layer", "visibility", visibleLayers["twi"] ? "visible" : "none");
       }
@@ -514,7 +539,7 @@ export default function Map({ visibleLayers }) {
         map.current.setLayoutProperty("hillshade-layer", "visibility", visibleLayers["hillshade"] ? "visible" : "none");
       }
 
-      // Handle special layers (population and forest loss)
+      // Handle special layers
       Object.entries(visibleLayers).forEach(([layerId, isVisible]) => {
         if (layerId.startsWith("POP_MAY202-") || layerId.startsWith("PopDensity-")) {
           const [dataType, region] = layerId.split("-");
@@ -532,28 +557,27 @@ export default function Map({ visibleLayers }) {
           if (map.current.getLayer(baseLayerId)) {
             map.current.setLayoutProperty(baseLayerId, "visibility", isVisible ? "visible" : "none");
             map.current.setLayoutProperty(`${baseLayerId}-points`, "visibility", isVisible ? "visible" : "none");
+            if (isVisible) {
+              addInteractivity(baseLayerId);
+              addInteractivity(`${baseLayerId}-points`);
+            }
           }
         }
       });
 
-      // Now handle data loading ONLY for dataset table layers
+      // Handle data loading for dataset table layers
       for (const { id, mapLayerId } of VECTOR_LAYERS) {
-        // Only proceed if:
-        // 1. This is a dataset table layer (exists in DATASET_TABLES)
-        // 2. The layer is set to visible
-        // 3. We don't already have the data
+        console.log(DATASET_TABLES[id])
         if (DATASET_TABLES[id] && visibleLayers[id] && (!datasets[id] || datasets[id].features.length === 0)) {
           try {
             const data = await fetchDatasets(id);
             const sourceId = `${id}Source`;
 
-            // Update state
             setDatasets((prev) => ({
               ...prev,
               [id]: data,
             }));
 
-            // Add or update source
             if (map.current.getSource(sourceId)) {
               map.current.getSource(sourceId).setData(data);
             } else {
@@ -563,7 +587,6 @@ export default function Map({ visibleLayers }) {
               });
             }
 
-            // Add layer if it doesn't exist
             if (!map.current.getLayer(mapLayerId)) {
               map.current.addLayer({
                 id: mapLayerId,
@@ -575,6 +598,9 @@ export default function Map({ visibleLayers }) {
                 paint: VECTOR_LAYERS.find((l) => l.id === id)?.paint || {},
               });
             }
+
+            // Add interactivity after layer is added/updated
+            addInteractivity(mapLayerId);
           } catch (error) {
             console.error(`Failed to load dataset table layer ${id}:`, error);
           }
@@ -583,6 +609,32 @@ export default function Map({ visibleLayers }) {
     };
 
     updateLayers();
+
+    // Cleanup function to remove event listeners
+    return () => {
+      if (map.current) {
+        // Remove all interactivity event listeners
+        VECTOR_LAYERS.forEach(({ mapLayerId }) => {
+          map.current.off("click", mapLayerId);
+          map.current.off("mouseenter", mapLayerId);
+          map.current.off("mouseleave", mapLayerId);
+        });
+
+        // Remove special layer listeners
+        Object.keys(visibleLayers).forEach((layerId) => {
+          if (layerId.includes("-") && layerId.split("-")[1].match(/^\d{4}$/)) {
+            const [region, year] = layerId.split("-");
+            const baseLayerId = `forest-loss-layer-${region}-${year}`;
+            map.current.off("click", baseLayerId);
+            map.current.off("mouseenter", baseLayerId);
+            map.current.off("mouseleave", baseLayerId);
+            map.current.off("click", `${baseLayerId}-points`);
+            map.current.off("mouseenter", `${baseLayerId}-points`);
+            map.current.off("mouseleave", `${baseLayerId}-points`);
+          }
+        });
+      }
+    };
   }, [visibleLayers, datasets]);
 
   // Population and hover effect
