@@ -10,6 +10,7 @@ function EditModal() {
   const [rows, setRows] = useState([]);
   const [editingRowId, setEditingRowId] = useState(null);
   const [editedData, setEditedData] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     axios
@@ -17,6 +18,8 @@ function EditModal() {
       .then((res) => setTables(res.data.tables))
       .catch((err) => console.error("Failed to load tables:", err));
   }, []);
+
+  const filteredRows = rows.filter((row) => Object.values(row).some((val) => val?.toString().toLowerCase().includes(searchQuery.toLowerCase())));
 
   const fetchTableData = (table) => {
     setSelectedTable(table);
@@ -55,7 +58,7 @@ function EditModal() {
   };
 
   return (
-    <div className="bottom-sidebar-edit">
+    <div className={`bottom-sidebar-edit ${showModalEdit ? "show" : ""}`}>
       <div className="edit-drawer">
         <div className="edit-sidebar">
           <h3>Tables</h3>
@@ -71,6 +74,9 @@ function EditModal() {
         <div className="edit-content">
           <div className="edit-header">
             <h3>{selectedTable ? `Editing: ${selectedTable}` : "Select a table"}</h3>
+            <div className="search-wrapper">
+              <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
             <button className="close-btn" onClick={() => setShowModalEdit(false)}>
               Close
             </button>
@@ -88,14 +94,24 @@ function EditModal() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {filteredRows.map((row) => (
                     <tr key={row.id}>
                       {Object.entries(row).map(([key, val]) => (
                         <td key={key}>{editingRowId === row.id ? <input value={editedData[key] ?? ""} onChange={(e) => handleChange(key, e.target.value)} /> : val}</td>
                       ))}
                       <td>
-                        {editingRowId === row.id ? <button onClick={handleUpdate}>Save</button> : <button onClick={() => handleEditClick(row)}>Edit</button>}
-                        <button onClick={() => handleDelete(row.id)}>Delete</button>
+                        {editingRowId === row.id ? (
+                          <button className="save-btn" onClick={handleUpdate}>
+                            Save
+                          </button>
+                        ) : (
+                          <button className="edit-btn" onClick={() => handleEditClick(row)}>
+                            Edit
+                          </button>
+                        )}
+                        <button className="delete-btn" onClick={() => handleDelete(row.id)}>
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}

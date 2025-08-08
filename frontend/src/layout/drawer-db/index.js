@@ -159,55 +159,57 @@ function Drawer() {
     );
   };
 
-  return (
-    <div className={`sidebar ${isOpen ? "open" : ""}`}>
-      <button className="toggle-btn" onClick={toggleSidebar}>
-        <span className="sidebar-title">Database & Analytics</span>
-        <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
-      </button>
-      <div className="sidebar-content">
-        {LAYER_GROUPS.map(renderGroup)}
-        {renderUploadedLayersSection()}
-        
-        <div className="visible-layers-section">
-          <h3>Visible Layers</h3>
-          <ul className="visible-layers-list">
-            {visibleLayersList.length > 0 ? (
-              visibleLayersList.map((layer, index) => (
-                <li key={index} className="visible-layer-item">
-                  <span>{layer.label}</span>
-                  <div className="layer-controls">
-                    <button 
-                      onClick={() => moveLayerUp(layer.id)} 
-                      disabled={index === 0} 
-                      title="Move layer up"
-                    >
-                      ↑
-                    </button>
-                    <button 
-                      onClick={() => moveLayerDown(layer.id)} 
-                      disabled={index === visibleLayersList.length - 1} 
-                      title="Move layer down"
-                    >
-                      ↓
-                    </button>
-                    <button 
-                      onClick={() => handleLayerToggle(layer.id, false)} 
-                      title="Hide layer"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <li className="no-layers-message">No visible layers</li>
-            )}
-          </ul>
-        </div>
-      </div>
+return (
+  <div className={`sidebar ${isOpen ? "open" : ""}`}>
+    <button className="toggle-btn" onClick={toggleSidebar}>
+      <span className="sidebar-title">Database & Analytics</span>
+      <span className="toggle-icon">{isOpen ? "×" : "☰"}</span>
+    </button>
+
+    <div className="sidebar-scrollable">
+      {LAYER_GROUPS.map(renderGroup)}
+      {renderUploadedLayersSection()}
     </div>
-  );
+
+    <div className="visible-layers-section">
+      <h3>Layers</h3>
+      <ul className="visible-layers-list">
+        {visibleLayersList.length > 0 ? (
+          visibleLayersList.map((layer, index) => (
+            <li key={index} className="visible-layer-item">
+              <span>{layer.label}</span>
+              <div className="layer-controls">
+                <button 
+                  onClick={() => moveLayerUp(layer.id)} 
+                  // disabled={index === 0} 
+                  title="Move layer up"
+                >
+                  ↑
+                </button>
+                <button 
+                  onClick={() => moveLayerDown(layer.id)} 
+                  // disabled={index === visibleLayersList.length - 1} 
+                  title="Move layer down"
+                >
+                  ↓
+                </button>
+                <button 
+                  onClick={() => handleLayerToggle(layer.id, false)} 
+                  title="Hide layer"
+                >
+                  ×
+                </button>
+              </div>
+            </li>
+          ))
+        ) : (
+          <li className="no-layers-message">No visible layers</li>
+        )}
+      </ul>
+    </div>
+  </div>
+);
+
 }
 
 export default Drawer;

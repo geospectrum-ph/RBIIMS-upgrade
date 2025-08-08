@@ -370,7 +370,7 @@ module.exports = (pool) => {
     const { tableName } = req.params;
 
     try {
-      // Exclude 'geom', 'latitude', and 'longitude' etc 
+      // Exclude 'geom', 'latitude', and 'longitude' etc
       const columnQuery = await pool.request().query(`
       SELECT COLUMN_NAME
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -394,18 +394,33 @@ module.exports = (pool) => {
 
   router.put("/editables/:tableName/:id", async (req, res) => {
     const { tableName, id } = req.params;
-    const updates = req.body; // Expecting key-value pairs
-
-    const setClause = Object.entries(updates)
-      .map(([key, value]) => `[${key}] = ${typeof value === "string" ? `'${value}'` : value}`)
-      .join(", ");
-
-    const query = `UPDATE [${tableName}] SET ${setClause} WHERE id = ${id}`;
+    const updates = req.body;
 
     try {
-      await pool.request().query(query);
-      res.json({ success: true });
+      // Exclude 'id' from the update payload
+      const columns = Object.keys(updates).filter((col) => col.toLowerCase() !== "id");
+
+      if (columns.length === 0) {
+        return res.status(400).json({ success: false, error: "No valid fields to update." });
+      }
+
+      const setClauses = columns.map((col) => `[${col}] = @${col}`).join(", ");
+
+      const request = pool.request();
+      columns.forEach((col) => {
+        request.input(col, updates[col]);
+      });
+      request.input("id", id);
+
+      await request.query(`
+      UPDATE [${tableName}]
+      SET ${setClauses}
+      WHERE id = @id
+    `);
+
+      res.json({ success: true, message: "Row updated successfully." });
     } catch (error) {
+      console.error("Update error:", error);
       res.status(500).json({ success: false, error: error.message });
     }
   });

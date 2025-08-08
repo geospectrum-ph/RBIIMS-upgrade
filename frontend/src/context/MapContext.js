@@ -14,7 +14,7 @@ export const MapContext = React.createContext({
 function MapContextProvider(props) {
   const [mapInstance, setMapInstance] = React.useState(null);
   const [uploadedLayers, setUploadedLayers] = React.useState([]);
-  
+
   const url_dem = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_30meters_DEM_Philippines_clipped&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_twi = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_TWI&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
   const url_slope = `${process.env.REACT_APP_BACKEND_DOMAIN}/api/geoserver?layer=GMS:SRTM_DEM_Philippines_Slope&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857`;
@@ -102,7 +102,6 @@ function MapContextProvider(props) {
     }
   };
 
-  // Helper function for random colors
   const getRandomColor = () => {
     const letters = "0123456789ABCDEF";
     let color = "#";
